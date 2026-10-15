@@ -1,0 +1,250 @@
+/* ====================
+   Dashboard Wrapper
+==================== */
+.dashboard-wrapper {
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f8fa;
+}
+
+/* ====================
+   Sidebar
+==================== */
+.dashboard-sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-logo {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #3a86ff;
+  padding: 1rem 0;
+}
+
+.sidebar-nav .btn {
+  width: 100%;
+  text-align: left;
+  font-weight: 500;
+  color: #3a3a3a;
+  transition: all 0.3s;
+}
+
+.sidebar-nav .btn:hover {
+  background-color: #3a86ff;
+  color: #fff;
+}
+
+.sidebar-nav .btn.active {
+  background-color: #3a86ff;
+  color: #fff;
+}
+
+/* ====================
+   Topbar
+==================== */
+.dashboard-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0.8rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topbar-left h2 {
+  font-size: 1.5rem;
+  color: #333333;
+}
+
+.topbar-right .icon {
+  cursor: pointer;
+  color: #555555;
+}
+
+.profile-dropdown {
+  position: relative;
+  cursor: pointer;
+}
+
+.profile-dropdown button {
+  background: #ffffff;
+  border: 1px solid #c0c0c0;
+  padding: 0.3rem 0.6rem;
+  border-radius: 5px;
+}
+
+.profile-dropdown .dropdown-menu {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  display: none;
+  min-width: 150px;
+  background: #ffffff;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  border-radius: 5px;
+  z-index: 10;
+}
+
+.profile-dropdown.show .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background-color: #3a86ff;
+  color: #fff;
+}
+
+/* ====================
+   Cards
+==================== */
+.card {
+  border-radius: 10px;
+  background-color: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+
+.card h5 {
+  color: #3a3a3a;
+  margin-bottom: 0.5rem;
+}
+
+.card span {
+  font-size: 1.4rem;
+  color: #3a86ff;
+  font-weight: 600;
+}
+
+/* ====================
+   Forms
+==================== */
+input.form-control {
+  border-radius: 6px;
+  border: 1px solid #c0c0c0;
+  padding: 0.5rem 0.7rem;
+}
+
+input.form-control:focus {
+  border-color: #3a86ff;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: #3a86ff;
+  border: none;
+  border-radius: 6px;
+}
+
+.btn-primary:hover {
+  background-color: #265ddf;
+}
+
+.btn-success {
+  background-color: #06d6a0;
+  border: none;
+  border-radius: 6px;
+}
+
+.btn-success:hover {
+  background-color: #05b084;
+}
+
+.btn-warning {
+  background-color: #ffba08;
+  border: none;
+  border-radius: 6px;
+}
+
+.btn-warning:hover {
+  background-color: #e6a700;
+}
+
+/* ====================
+   Tables
+==================== */
+.table {
+  margin-top: 1rem;
+}
+
+.table thead {
+  background-color: #f0f4f8;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #e6f0ff;
+}
+
+/* ====================
+   Sections
+==================== */
+.card-section {
+  margin-bottom: 1.5rem;
+}
+
+/* ====================
+   Footer
+==================== */
+.dashboard-footer {
+  background: #ffffff;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #555555;
+  display: flex;
+  justify-content: space-between;
+}
+
+.dashboard-footer a {
+  color: #3a86ff;
+  text-decoration: none;
+}
+
+.dashboard-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ====================
+   Responsive tweaks
+==================== */
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0.5rem;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+  }
+
+  .sidebar-nav .btn {
+    flex: 1 0 auto;
+    margin-right: 0.5rem;
+  }
+
+  .dashboard-main {
+    width: 100%;
+  }
+}

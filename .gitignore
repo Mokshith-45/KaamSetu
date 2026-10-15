@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+kaamsetu/node_modules/
+
+# Build output
+dist/
+kaamsetu/dist/
+dist-ssr/
+kaamsetu/dist-ssr/
+
+# Environment files
+.env
+.env.*
+!.env.example
+kaamsetu/.env
+kaamsetu/.env.*
+!kaamsetu/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor files
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,236 @@
+.staff-dashboard-wrapper {
+  display: flex;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+/* Sidebar */
+.staff-dashboard-sidebar {
+  width: 220px;
+  background: #00796b;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  transition: transform 0.3s ease;
+}
+.staff-sidebar-logo {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+.staff-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-btn {
+  background: transparent;
+  color: #fff;
+  padding: 12px 15px;
+  border-radius: 6px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+.sidebar-btn:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateX(2px);
+}
+.sidebar-btn.active {
+  font-weight: bold;
+}
+
+/* Main content */
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Topbar */
+.dashboard-topbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: #f5f5f5;
+  align-items: center;
+}
+.dashboard-topbar .icon {
+  font-size: 1.2rem;
+  margin-right: 10px;
+  cursor: pointer;
+}
+.profile-dropdown {
+  position: relative;
+  cursor: pointer;
+}
+.profile-dropdown .dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  z-index: 10;
+  min-width: 150px;
+}
+.profile-dropdown.show .dropdown-content {
+  display: block;
+}
+.dropdown-content button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Content */
+.dashboard-content {
+  padding: 20px;
+}
+.card-section {
+  background: #f1f1f1;
+  padding: 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+.overview-cards {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.card {
+  flex: 1 1 200px;
+  background: #e0f2f1;
+  padding: 20px;
+  border-radius: 6px;
+  text-align: center;
+}
+.shift-preview, .overview-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+.shift-card {
+  background: #f1f8f7;
+  padding: 15px;
+  border-radius: 6px;
+  min-width: 150px;
+}
+
+/* Buttons & Inputs */
+button, input {
+  font-family: Arial, sans-serif;
+}
+button, .day-btn {
+  background: #00796b;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 5px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+button:hover, .day-btn:hover {
+  background: #004d40;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+}
+button:active, .day-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+input {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+/* Availability buttons */
+.day-btn {
+  background: #f1f1f1;
+  color: #00796b;
+  border: 1px solid #00796b;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 5px 5px 5px 0;
+}
+.day-btn.selected {
+  background: #00796b;
+  color: #fff;
+}
+
+/* Save Availability */
+.save-availability-btn {
+  margin-top: 10px;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  text-align: left;
+}
+
+/* Footer */
+.dashboard-footer {
+  padding: 15px 20px;
+  background: #f5f5f5;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .staff-dashboard-wrapper {
+    flex-direction: column;
+  }
+  .staff-dashboard-sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .sidebar-btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  .dashboard-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .overview-cards, .shift-preview {
+    flex-direction: column;
+  }
+  .day-btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .day-btn {
+    width: 100%;
+    margin-right: 0;
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+  button, input {
+    font-size: 0.85rem;
+  }
+}
