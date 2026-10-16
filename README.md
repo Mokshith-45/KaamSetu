@@ -2,6 +2,17 @@
 
 KaamSetu is a React and Vite workforce-planning application for small businesses and their part-time staff.
 
+## Project structure
+
+The repository is organized into separate application layers:
+
+```text
+frontend/       React, Vite, and Supabase client application
+backend/        Backend-ready workspace for server-side integrations
+```
+
+The current application uses Supabase directly from the frontend for authentication and database operations. The `backend/` directory provides a clear place for future server-side services without mixing them with the UI code.
+
 ## Current features
 
 - Landing and authentication page for KaamSetu.
@@ -28,10 +39,6 @@ KaamSetu is a React and Vite workforce-planning application for small businesses
 - About page.
 - Responsive styling, animated landing-page effects, and Lottie illustrations.
 
-## Project structure
-
-The Vite application is located in the [`kaamsetu/`](./kaamsetu/) directory.
-
 ## Tech stack
 
 - React
@@ -49,14 +56,14 @@ Requirements:
 - npm
 - A Supabase project configured with the tables used by the application (`profiles`, `staff_roles`, and `attendance_logs`)
 
-From the project directory:
+From the repository root:
 
 ```bash
-cd kaamsetu
 npm install
+npm install --prefix frontend
 ```
 
-Create `kaamsetu/.env` from [`kaamsetu/.env.example`](./kaamsetu/.env.example):
+Create `frontend/.env` from [`frontend/.env.example`](./frontend/.env.example):
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -69,7 +76,7 @@ Start the development server:
 npm run dev
 ```
 
-Run the available checks:
+The root commands delegate to the frontend:
 
 ```bash
 npm run lint
@@ -82,4 +89,4 @@ The main authentication flow, role-based navigation, dashboard layouts, and init
 
 ## Security note
 
-Never commit `kaamsetu/.env` or private service-role credentials. Environment files are ignored by Git; use [`kaamsetu/.env.example`](./kaamsetu/.env.example) as the shareable configuration template.
+Never commit `frontend/.env`, `backend/.env`, or private service-role credentials. Environment files are ignored by Git; use [`frontend/.env.example`](./frontend/.env.example) and [`backend/.env.example`](./backend/.env.example) as shareable configuration templates.

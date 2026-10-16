@@ -1,20 +1,14 @@
 # Dependencies
 node_modules/
-kaamsetu/node_modules/
 
 # Build output
 dist/
-kaamsetu/dist/
 dist-ssr/
-kaamsetu/dist-ssr/
 
 # Environment files
 .env
 .env.*
 !.env.example
-kaamsetu/.env
-kaamsetu/.env.*
-!kaamsetu/.env.example
 
 # Logs
 *.log
