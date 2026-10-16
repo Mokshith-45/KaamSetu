@@ -386,14 +386,19 @@
 }
 @media (max-width: 600px) {
   .landing-nav {
+    flex-wrap: wrap;
+    gap: 14px;
     padding: 18px 20px;
   }
-  .landing-nav nav a,
-  .landing-nav nav .button-ghost {
-    display: none;
-  }
   .landing-nav nav {
-    gap: 7px;
+    justify-content: flex-end;
+    width: 100%;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .landing-nav nav .button {
+    padding: 9px 10px;
+    font-size: 12px;
   }
   .hero {
     padding: 45px 20px 70px;
@@ -408,11 +413,32 @@
     flex-wrap: wrap;
   }
   .hero-preview {
+    width: 100%;
+    overflow: hidden;
     padding: 12px;
     border-radius: 17px;
   }
+  .preview-window {
+    width: 100%;
+  }
   .schedule-row {
+    grid-template-columns: minmax(104px, 1.8fr) repeat(4, minmax(0, 1fr));
     padding: 10px 12px;
+    gap: 4px;
+    font-size: 8px;
+  }
+  .schedule-row strong {
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .shift-chip {
+    overflow: hidden;
+    padding: 6px 1px;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .feature-section,
   .steps-section {

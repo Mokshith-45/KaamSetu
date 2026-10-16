@@ -125,7 +125,12 @@
 }
 @media (max-width: 650px) {
   .info-nav {
+    flex-wrap: wrap;
+    gap: 14px;
     padding: 18px 20px;
+  }
+  .info-nav .back-link {
+    margin-left: auto;
   }
   .about-main {
     padding: 45px 20px;
@@ -144,6 +149,8 @@
     padding: 25px;
   }
   .info-footer {
+    flex-wrap: wrap;
+    gap: 12px;
     padding: 25px 20px;
   }
 }

@@ -85,9 +85,22 @@
   line-height: 1.6;
 }
 @media (max-width: 750px) {
+  .info-nav {
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 18px 20px;
+  }
+  .info-nav .back-link {
+    margin-left: auto;
+  }
   .contact-main {
     grid-template-columns: 1fr;
     gap: 45px;
     padding: 50px 20px 75px;
+  }
+  .info-footer {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 25px 20px;
   }
 }
