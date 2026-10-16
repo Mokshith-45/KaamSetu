@@ -6,18 +6,27 @@ import {
   FiTarget,
   FiUsers,
 } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import "./About.css";
 
 export default function About() {
+  const [searchParams] = useSearchParams();
+  const requestedReturnPath = searchParams.get("from");
+  const returnPath = ["/owner-dashboard", "/staff-dashboard"].includes(
+    requestedReturnPath,
+  )
+    ? requestedReturnPath
+    : "/";
+  const returnLabel = returnPath === "/" ? "Back to home" : "Back to dashboard";
+
   return (
     <div className="info-page">
       <header className="info-nav">
         <Link to="/" className="landing-brand">
           <span className="brand-mark">K</span>Kaam<span>Setu</span>
         </Link>
-        <Link to="/" className="back-link">
-          <FiArrowLeft /> Back to home
+        <Link to={returnPath} className="back-link">
+          <FiArrowLeft /> {returnLabel}
         </Link>
       </header>
       <main className="about-main">
@@ -87,8 +96,10 @@ export default function About() {
       <footer className="info-footer">
         <span>© 2026 KaamSetu</span>
         <span>
-          <Link to="/contact">Contact us</Link> ·{" "}
-          <Link to="/">Get started</Link>
+          <Link to={`/contact?from=${encodeURIComponent(returnPath)}`}>
+            Contact us
+          </Link>{" "}
+          · <Link to={returnPath}>{returnLabel}</Link>
         </span>
       </footer>
     </div>

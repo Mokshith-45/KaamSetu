@@ -77,8 +77,12 @@ export default function DashboardLayout({
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <Link to="/about">About KaamSetu</Link>
-          <Link to="/contact">Help & contact</Link>
+          <Link to={{ pathname: "/about", search: `?from=/${role}-dashboard` }}>
+            About KaamSetu
+          </Link>
+          <Link to={{ pathname: "/contact", search: `?from=/${role}-dashboard` }}>
+            Help & contact
+          </Link>
           <button onClick={onLogout}>
             <FiLogOut /> Log out
           </button>

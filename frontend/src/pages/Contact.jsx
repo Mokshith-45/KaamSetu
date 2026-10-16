@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { FiArrowLeft, FiCheck, FiMail } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import "./Contact.css";
 
 export default function Contact() {
+  const [searchParams] = useSearchParams();
+  const requestedReturnPath = searchParams.get("from");
+  const returnPath = ["/owner-dashboard", "/staff-dashboard"].includes(
+    requestedReturnPath,
+  )
+    ? requestedReturnPath
+    : "/";
+  const returnLabel = returnPath === "/" ? "Back to home" : "Back to dashboard";
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sent, setSent] = useState(false);
   const update = (key) => (event) =>
@@ -19,8 +27,8 @@ export default function Contact() {
         <Link to="/" className="landing-brand">
           <span className="brand-mark">K</span>Kaam<span>Setu</span>
         </Link>
-        <Link to="/" className="back-link">
-          <FiArrowLeft /> Back to home
+        <Link to={returnPath} className="back-link">
+          <FiArrowLeft /> {returnLabel}
         </Link>
       </header>
       <main className="contact-main">
@@ -108,7 +116,10 @@ export default function Contact() {
       <footer className="info-footer">
         <span>© 2026 KaamSetu</span>
         <span>
-          <Link to="/about">About us</Link> · <Link to="/">Get started</Link>
+          <Link to={`/about?from=${encodeURIComponent(returnPath)}`}>
+            About us
+          </Link>{" "}
+          · <Link to={returnPath}>{returnLabel}</Link>
         </span>
       </footer>
     </div>
