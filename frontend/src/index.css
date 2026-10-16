@@ -1,26 +1,139 @@
-/* Reset default margins/paddings */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap");
+
+:root {
+  font-family: "DM Sans", sans-serif;
+  color: #172033;
+  background: #f8f9fc;
+  font-synthesis: none;
+  --ink: #172033;
+  --muted: #68738a;
+  --line: #e7eaf1;
+  --surface: #ffffff;
+  --soft: #f4f5fb;
+  --primary: #5b4bdb;
+  --primary-dark: #4537b9;
+  --violet-soft: #eeebff;
+  --green: #18845c;
+  --green-soft: #e8f7f0;
+  --amber: #a56913;
+  --amber-soft: #fff5df;
+  --danger: #c24155;
+  --shadow: 0 16px 40px rgba(31, 35, 61, 0.08);
+}
+
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
-
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  font-family: "Poppins", sans-serif;
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
 }
-
-/* Make all main containers full height */
-.main-container, .auth-container, .about-container, .contact-container {
-  min-height: 100vh;
-  width: 100%;
-  overflow-x: hidden;
-}
-
-/* Optional: fix scrollbars on small overflow */
 body {
-  overflow-y: auto;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); /* keep background consistent */
+  background: #f8f9fc;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(91, 75, 219, 0.3);
+  outline-offset: 2px;
+}
+.button {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-weight: 700;
+  transition: 0.2s ease;
+}
+.button-primary {
+  background: var(--primary);
+  color: white;
+}
+.button-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+.button-secondary {
+  background: var(--violet-soft);
+  color: var(--primary-dark);
+}
+.button-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.button-ghost:hover {
+  background: var(--soft);
+  color: var(--ink);
+}
+.eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.muted {
+  color: var(--muted);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 99px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.badge-success {
+  color: var(--green);
+  background: var(--green-soft);
+}
+.badge-warning {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+.badge-neutral {
+  color: var(--muted);
+  background: var(--soft);
+}
+.field {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  padding: 11px 12px;
+}
+.field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #a1a8b8;
 }

@@ -1,98 +1,149 @@
-.about-container {
+.info-page {
   min-height: 100vh;
-  width: 100%;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-  color: #fff;
-  padding: 2rem 1.5rem;
-  font-family: "Poppins", sans-serif;
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden; /* prevent horizontal scroll */
+  background: #fff;
 }
-
+.info-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1180px;
+  margin: auto;
+  padding: 25px 30px;
+}
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.about-main {
+  max-width: 1080px;
+  margin: auto;
+  padding: 65px 30px;
+}
 .about-hero {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  flex-shrink: 0;
+  max-width: 720px;
 }
-
-.about-hero h1 {
-  font-size: 2.8rem;
-  margin-bottom: 0.8rem;
+.about-hero h1,
+.contact-copy h1 {
+  margin: 15px 0;
+  font:
+    800 clamp(40px, 6vw, 65px)/1.08 "Plus Jakarta Sans",
+    sans-serif;
+  letter-spacing: -0.05em;
 }
-
-.about-hero p {
-  font-size: 1.2rem;
-  color: #00e5ff;
+.about-hero p,
+.contact-copy > p {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.7;
 }
-
-.about-content {
+.about-story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  margin-top: 110px;
+  padding-top: 50px;
+  border-top: 1px solid var(--line);
+}
+.about-story h2,
+.about-promise h2 {
+  margin-top: 12px;
+  font:
+    800 30px "Plus Jakarta Sans",
+    sans-serif;
+}
+.about-story > p {
+  color: var(--muted);
+  line-height: 1.8;
+}
+.about-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 60px;
+}
+.about-values article {
+  padding: 25px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.about-values svg {
+  color: var(--primary);
+  font-size: 22px;
+}
+.about-values h3 {
+  margin: 20px 0 8px;
+  font:
+    700 16px "Plus Jakarta Sans",
+    sans-serif;
+}
+.about-values p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 14px;
+}
+.about-promise {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  margin-top: 100px;
+  padding: 45px;
+  border-radius: 18px;
+  background: #f7f6ff;
+}
+.about-promise ul {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+.about-promise li {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 2rem;
-  flex: 1;
-  overflow-x: hidden; /* prevent horizontal scroll */
-}
-
-.about-text {
-  flex: 1;
-  min-width: 280px;
-  max-width: 500px;
-}
-
-.about-text h2 {
-  margin-top: 1rem;
-  font-size: 1.5rem;
-  color: #00e5ff;
-}
-
-.about-text p, .about-text li {
-  margin-top: 0.5rem;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-.about-text ul {
-  margin-top: 0.5rem;
-  padding-left: 1.2rem;
-}
-
-.about-video {
-  flex: 1;
-  min-width: 280px;
-  max-width: 450px;
-  display: flex;
-  justify-content: center;
+  gap: 10px;
   align-items: center;
 }
-
-.video-placeholder {
-  width: 100%;
-  height: 250px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 15px;
+.about-promise li svg {
+  color: var(--green);
+}
+.info-footer {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #00e5ff;
-  font-weight: bold;
-  text-align: center;
+  justify-content: space-between;
+  max-width: 1180px;
+  margin: auto;
+  padding: 25px 30px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
 }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .about-hero h1 { font-size: 2rem; }
-  .about-text h2 { font-size: 1.3rem; }
-  .about-text p, .about-text li { font-size: 0.95rem; }
-  .video-placeholder { height: 200px; }
+.info-footer a {
+  color: var(--primary);
 }
-
-@media (max-width: 480px) {
-  .about-hero h1 { font-size: 1.6rem; }
-  .about-hero p { font-size: 1rem; }
-  .about-text h2 { font-size: 1.1rem; }
-  .video-placeholder { height: 180px; }
+@media (max-width: 650px) {
+  .info-nav {
+    padding: 18px 20px;
+  }
+  .about-main {
+    padding: 45px 20px;
+  }
+  .about-story,
+  .about-promise {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 65px;
+  }
+  .about-values {
+    grid-template-columns: 1fr;
+    margin-top: 40px;
+  }
+  .about-promise {
+    padding: 25px;
+  }
+  .info-footer {
+    padding: 25px 20px;
+  }
 }

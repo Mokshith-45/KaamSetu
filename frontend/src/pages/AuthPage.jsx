@@ -1,312 +1,402 @@
-import React, { useState, useEffect } from "react";
-import "./AuthPage.css";
+import { createElement, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FiArrowRight,
+  FiCheck,
+  FiEye,
+  FiEyeOff,
+  FiUsers,
+  FiZap,
+  FiCalendar,
+} from "react-icons/fi";
 import { supabase } from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
-import kaamVideo from "../assets/kaam.mp4";
+import "./AuthPage.css";
 
-const texts = [
-  "Welcome to KaamSetu",
-  "AI-Powered Smart Scheduling for Staff",
+const features = [
+  {
+    icon: FiZap,
+    title: "Plan in minutes",
+    text: "Turn availability and staffing needs into a clear weekly draft.",
+  },
+  {
+    icon: FiUsers,
+    title: "One team view",
+    text: "Keep owners and staff aligned with the same source of truth.",
+  },
+  {
+    icon: FiCalendar,
+    title: "Built for real life",
+    text: "Make changes quickly when shifts, people, or priorities change.",
+  },
 ];
 
-const AuthPage = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [typedText, setTypedText] = useState("");
-  const [textIndex, setTextIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-  const [bubbles, setBubbles] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [userType, setUserType] = useState("owner");
-  const [staffRole, setStaffRole] = useState("Cashier");
-  const [message, setMessage] = useState("");
+  const [showAuth, setShowAuth] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    userType: "owner",
+    staffRole: "Cashier",
+  });
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const update = (key) => (event) =>
+    setForm({ ...form, [key]: event.target.value });
 
-  // Typewriter effect
-  useEffect(() => {
-    const currentText = texts[textIndex];
-    if (charIndex < currentText.length) {
-      const timeout = setTimeout(() => {
-        setTypedText((prev) => prev + currentText[charIndex]);
-        setCharIndex(charIndex + 1);
-      }, 80);
-      return () => clearTimeout(timeout);
-    } else {
-      const timeout = setTimeout(() => {
-        setCharIndex(0);
-        setTypedText("");
-        setTextIndex((prev) => (prev + 1) % texts.length);
-      }, 1800);
-      return () => clearTimeout(timeout);
-    }
-  }, [charIndex, textIndex]);
-
-  // Generate bubbles dynamically
-  useEffect(() => {
-    const bubbleArray = [];
-    for (let i = 0; i < 30; i++) {
-      bubbleArray.push({
-        id: i,
-        size: Math.random() * 15 + 10,
-        left: Math.random() * 100,
-        duration: Math.random() * 30 + 20,
-        delay: Math.random() * 5,
-      });
-    }
-    setBubbles(bubbleArray);
-
-    // Simulate loading preloader
-    const loaderTimeout = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(loaderTimeout);
-  }, []);
-
-  const handleSignUp = async () => {
-    setMessage("Creating your account...");
+  const submit = async (event) => {
+    event.preventDefault();
+    setMessage("");
+    setBusy(true);
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (signUpError) throw signUpError;
-      if (!data.user) throw new Error("Failed to create user.");
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert([
-          { id: data.user.id, full_name: fullName, user_type: userType },
-        ]);
-      if (profileError) throw new Error("Failed to save profile");
-
-      if (userType === "staff") {
-        const { error: roleError } = await supabase
-          .from("staff_roles")
-          .insert([{ staff_id: data.user.id, role: staffRole }]);
-        if (roleError) throw new Error("Failed to save staff role");
-      }
-
-      setMessage("Account created! Please login.");
-      setIsSignUp(false);
-      setEmail("");
-      setPassword("");
-      setFullName("");
-      setStaffRole("Cashier");
-    } catch (err) {
-      setMessage(err.message || "Something went wrong.");
-    }
-  };
-
-  const handleLogin = async () => {
-    setMessage("Logging in...");
-    try {
-      const { data: loginData, error: loginError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
+      if (isSignUp) {
+        if (!form.fullName.trim())
+          throw new Error("Please enter your full name.");
+        const { data, error } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
         });
-      if (loginError) throw new Error("Invalid email or password");
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name, user_type")
-        .eq("id", loginData.user.id)
-        .maybeSingle();
-      if (profileError || !profileData) throw new Error("Profile not found!");
-
-      localStorage.setItem("userFullName", profileData.full_name);
-
-      if (profileData.user_type === "owner") navigate("/owner-dashboard");
-      else navigate("/staff-dashboard");
-    } catch (err) {
-      setMessage(err.message);
+        if (error) throw error;
+        if (!data.user) throw new Error("We could not create your account.");
+        const { error: profileError } = await supabase.from("profiles").insert([
+          {
+            id: data.user.id,
+            full_name: form.fullName.trim(),
+            user_type: form.userType,
+          },
+        ]);
+        if (profileError)
+          throw new Error(
+            "Your account was created, but the profile could not be saved.",
+          );
+        if (form.userType === "staff") {
+          const { error: roleError } = await supabase
+            .from("staff_roles")
+            .insert([{ staff_id: data.user.id, role: form.staffRole }]);
+          if (roleError)
+            throw new Error(
+              "Your account was created, but the staff role could not be saved.",
+            );
+        }
+        setMessage(
+          "Account created. Check your email if confirmation is required, then sign in.",
+        );
+        setIsSignUp(false);
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: form.email,
+          password: form.password,
+        });
+        if (error) throw new Error("Invalid email or password.");
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("full_name, user_type")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        if (profileError || !profile)
+          throw new Error("Profile not found. Please contact support.");
+        localStorage.setItem("userFullName", profile.full_name);
+        navigate(
+          profile.user_type === "owner"
+            ? "/owner-dashboard"
+            : "/staff-dashboard",
+        );
+      }
+    } catch (error) {
+      setMessage(error.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <>
-      {loading && (
-        <div className="preloader">
-          {/* motion.dev placeholder */}
-          <div className="loader-dot"></div>
-          <div className="loader-dot"></div>
-          <div className="loader-dot"></div>
-        </div>
-      )}
-      <div className="authpage-wrapper">
-        {/* Dynamic Bubbles */}
-        {bubbles.map((b) => (
-          <div
-            key={b.id}
-            className="bubble"
-            style={{
-              width: `${b.size}px`,
-              height: `${b.size}px`,
-              left: `${b.left}%`,
-              animationDuration: `${b.duration}s`,
-              animationDelay: `${b.delay}s`,
+    <div className="landing-page">
+      <header className="landing-nav">
+        <Link to="/" className="landing-brand">
+          <span className="brand-mark">K</span>Kaam<span>Setu</span>
+        </Link>
+        <nav>
+          <Link to="/about">About</Link>
+          <Link to="/contact">Contact</Link>
+          <button
+            className="button button-ghost"
+            onClick={() => {
+              setIsSignUp(false);
+              setShowAuth(true);
             }}
-          ></div>
-        ))}
-
-        <section className="hero-section">
-          <div className="hero-left">
-            <h1 className="glow-text">KaamSetu</h1>
-            <p className="typed-text">{typedText}</p>
-            <p className="hero-info">
-              Effortlessly manage staff schedules, communicate in real-time, and
-              track analytics. Designed for owners and staff to streamline work.
+          >
+            Sign in
+          </button>
+          <button
+            className="button button-primary"
+            onClick={() => {
+              setIsSignUp(true);
+              setShowAuth(true);
+            }}
+          >
+            Get started <FiArrowRight />
+          </button>
+        </nav>
+      </header>
+      <main>
+        <section className="hero">
+          <div className="hero-copy">
+            <span className="eyebrow">Workforce management, made human</span>
+            <h1>
+              Make every shift <em>work better.</em>
+            </h1>
+            <p>
+              KaamSetu helps small businesses build reliable schedules, keep
+              teams informed, and spend less time chasing spreadsheets.
             </p>
-            <button
-              className="get-started-btn"
-              onClick={() => setShowModal(true)}
-            >
-              Get Started
-            </button>
-          </div>
-          <div className="hero-right">
-            <video
-              src={kaamVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{ width: "100%", maxWidth: "400px", borderRadius: "15px" }}
-            />
-          </div>
-        </section>
-
-        {/* Feature Cards */}
-        <section className="feature-cards-section">
-          <div className="feature-card glow-card">
-            <iframe src="https://lottie.host/embed/9676637b-a07d-4ec2-8725-2add98e10c43/XwlXmKlbUF.lottie"></iframe>
-            <h3>Smart Scheduling</h3>
-            <p>Auto-generate schedules based on availability.</p>
-          </div>
-          <div className="feature-card glow-card">
-            <iframe src="https://lottie.host/embed/2363c2be-6c17-45dc-8c6f-cf4f03c35381/eIyUuM7E1y.lottie"></iframe>
-            <h3>Real-time Updates</h3>
-            <p>Instant notifications on shift changes.</p>
-          </div>
-          <div className="feature-card glow-card">
-            <iframe src="https://lottie.host/embed/d8960129-9e7c-454e-980e-d7c2ae3e4f6b/428m8fzbQ0.lottie"></iframe>
-            <h3>Staff Analytics</h3>
-            <p>Track performance and attendance trends.</p>
-          </div>
-          <div className="feature-card glow-card">
-            <iframe src="https://lottie.host/embed/05ccfa62-967b-4086-8992-023384b54bfc/WkQaVMwQUN.lottie"></iframe>
-            <h3>Easy Communication</h3>
-            <p>Send messages directly to your team.</p>
-          </div>
-        </section>
-
-        {/* Login Modal */}
-        {showModal && (
-          <div className="login-modal-wrapper">
-            <div className="login-modal floating-blur">
+            <div className="hero-actions">
               <button
-                className="close-modal-btn"
-                onClick={() => setShowModal(false)}
+                className="button button-primary"
+                onClick={() => {
+                  setIsSignUp(true);
+                  setShowAuth(true);
+                }}
               >
-                ✕
+                Start for free <FiArrowRight />
               </button>
-
-              <h2 className="modal-typed-text">{typedText}</h2>
-
+              <button
+                className="button button-ghost"
+                onClick={() =>
+                  document
+                    .getElementById("features")
+                    .scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                See how it works
+              </button>
+            </div>
+            <div className="trust-line">
+              <span>
+                <FiCheck /> No credit card required
+              </span>
+              <span>
+                <FiCheck /> Designed for small teams
+              </span>
+            </div>
+          </div>
+          <div className="hero-preview">
+            <div className="preview-window">
+              <div className="preview-head">
+                <span className="preview-dots">● ● ●</span>
+                <span>Weekly schedule</span>
+                <span className="preview-status">● Live draft</span>
+              </div>
+              <div className="preview-title">
+                <div>
+                  <small>MON, OCT 14 — SUN, OCT 20</small>
+                  <strong>Your team this week</strong>
+                </div>
+                <span className="mini-avatar">AK</span>
+              </div>
+              <div className="schedule-row schedule-header">
+                <span>TEAM</span>
+                <span>MON</span>
+                <span>TUE</span>
+                <span>WED</span>
+                <span>THU</span>
+              </div>
+              {["Ananya · Cashier", "Rahul · Stock", "Maya · Floor"].map(
+                (person, index) => (
+                  <div className="schedule-row" key={person}>
+                    <strong>{person}</strong>
+                    {[0, 1, 2, 3].map((day) => (
+                      <span
+                        className={`shift-chip chip-${(index + day) % 3}`}
+                        key={day}
+                      >
+                        {day === 1 && index === 1
+                          ? "OFF"
+                          : day % 2
+                            ? "12–5"
+                            : "9–2"}
+                      </span>
+                    ))}
+                  </div>
+                ),
+              )}
+              <div className="preview-foot">
+                <FiZap /> AI draft is balanced across availability and coverage
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="feature-section" id="features">
+          <div className="section-heading">
+            <span className="eyebrow">Everything in one place</span>
+            <h2>Less admin. More time for your team.</h2>
+          </div>
+          <div className="feature-grid">
+            {features.map(({ icon: Icon, title, text }) => (
+              <article className="feature-card" key={title}>
+                <span className="feature-icon">{createElement(Icon)}</span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="steps-section">
+          <div>
+            <span className="eyebrow">How KaamSetu works</span>
+            <h2>A calmer way to run your week.</h2>
+          </div>
+          <div className="steps">
+            {[
+              "Set up your shop and team",
+              "Add availability and requirements",
+              "Review, adjust, and share",
+            ].map((step, index) => (
+              <div className="step" key={step}>
+                <span>0{index + 1}</span>
+                <div>
+                  <h3>{step}</h3>
+                  <p>
+                    {
+                      [
+                        "Start with the details that make your business unique.",
+                        "Everyone’s preferences stay visible and easy to update.",
+                        "Keep the final call with you, while your team stays in sync.",
+                      ][index]
+                    }
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+      <footer className="landing-footer">
+        <Link to="/" className="landing-brand">
+          <span className="brand-mark">K</span>Kaam<span>Setu</span>
+        </Link>
+        <span>Simple scheduling for ambitious small teams.</span>
+        <span>
+          © 2026 KaamSetu · <Link to="/about">About</Link> ·{" "}
+          <Link to="/contact">Contact</Link>
+        </span>
+      </footer>
+      {showAuth && (
+        <div className="auth-overlay" role="dialog" aria-modal="true">
+          <div className="auth-card">
+            <button
+              className="auth-close"
+              onClick={() => setShowAuth(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <span className="eyebrow">
+              {isSignUp ? "Create your workspace" : "Welcome back"}
+            </span>
+            <h2>{isSignUp ? "Build a better week." : "Sign in to KaamSetu"}</h2>
+            <p className="muted">
+              {isSignUp
+                ? "Start managing your team in a few minutes."
+                : "Your team’s next shift is waiting."}
+            </p>
+            <form onSubmit={submit}>
               {isSignUp && (
                 <>
-                  <div className="input-group">
-                    <span className="input-icon">
-                      <i className="fas fa-user"></i>
-                    </span>
+                  <label className="field">
+                    Full name
                     <input
-                      type="text"
-                      placeholder="Full Name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      value={form.fullName}
+                      onChange={update("fullName")}
+                      placeholder="e.g. Priya Sharma"
                     />
-                  </div>
-                  <select
-                    value={userType}
-                    onChange={(e) => setUserType(e.target.value)}
-                    className="custom-select"
-                  >
-                    <option value="owner">Shop Owner</option>
-                    <option value="staff">Staff</option>
-                  </select>
-
-                  {userType === "staff" && (
-                    <select
-                      value={staffRole}
-                      onChange={(e) => setStaffRole(e.target.value)}
-                      className="custom-select"
-                    >
-                      <option value="Cashier">Cashier</option>
-                      <option value="Stock">Stock</option>
-                      <option value="Deliverer">Deliverer</option>
-                      <option value="Other">Other</option>
+                  </label>
+                  <label className="field">
+                    I am a
+                    <select value={form.userType} onChange={update("userType")}>
+                      <option value="owner">Shop owner</option>
+                      <option value="staff">Staff member</option>
                     </select>
+                  </label>
+                  {form.userType === "staff" && (
+                    <label className="field">
+                      Staff role
+                      <select
+                        value={form.staffRole}
+                        onChange={update("staffRole")}
+                      >
+                        <option>Cashier</option>
+                        <option>Stock</option>
+                        <option>Deliverer</option>
+                        <option>Other</option>
+                      </select>
+                    </label>
                   )}
                 </>
               )}
-
-              <div className="input-group">
-                <span className="input-icon">
-                  <i className="fas fa-envelope"></i>
-                </span>
-<input
-  type="email"
-  name="email"
-  placeholder="Email"
-  value={email}
-  onChange={(e) => setEmail(e.target.value)}
-  autoComplete="email"
-/>
-              </div>
-
-              <div className="input-group">
-                <span className="input-icon">
-                  <i className="fas fa-lock"></i>
-                </span>
+              <label className="field">
+                Email
                 <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={update("email")}
+                  placeholder="you@company.com"
                 />
-                <span
-                  className="show-password"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </span>
-              </div>
-
+              </label>
+              <label className="field">
+                Password
+                <div className="password-field">
+                  <input
+                    required
+                    minLength="6"
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={update("password")}
+                    placeholder="At least 6 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+              </label>
               <button
-                className="auth-btn"
-                onClick={isSignUp ? handleSignUp : handleLogin}
+                className="button button-primary auth-submit"
+                disabled={busy}
               >
-                {isSignUp ? "Sign Up" : "Login"}
+                {busy ? "Working…" : isSignUp ? "Create account" : "Sign in"}{" "}
+                <FiArrowRight />
               </button>
-
-              <p className="switch-auth">
-                {isSignUp ? "Already have an account?" : "New user?"}{" "}
-                <span onClick={() => setIsSignUp(!isSignUp)}>
-                  {isSignUp ? "Login" : "Sign Up"}
-                </span>
+            </form>
+            {message && (
+              <p
+                className={`auth-message ${message.startsWith("Account") ? "success" : ""}`}
+              >
+                {message}
               </p>
-
-              {message && <p className="message">{message}</p>}
-            </div>
+            )}
+            <p className="auth-switch">
+              {isSignUp ? "Already have an account?" : "New to KaamSetu?"}{" "}
+              <button
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setMessage("");
+                }}
+              >
+                {isSignUp ? "Sign in" : "Create an account"}
+              </button>
+            </p>
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
-};
-
-export default AuthPage;
+}

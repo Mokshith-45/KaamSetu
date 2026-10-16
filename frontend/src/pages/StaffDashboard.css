@@ -1,236 +1,226 @@
-.staff-dashboard-wrapper {
-  display: flex;
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
-}
-
-/* Sidebar */
-.staff-dashboard-sidebar {
-  width: 220px;
-  background: #00796b;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  transition: transform 0.3s ease;
-}
-.staff-sidebar-logo {
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-bottom: 20px;
-}
-.staff-sidebar-nav {
-  display: flex;
-  flex-direction: column;
-}
-.sidebar-btn {
-  background: transparent;
-  color: #fff;
-  padding: 12px 15px;
-  border-radius: 6px;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-.sidebar-btn:hover {
-  background: rgba(255,255,255,0.15);
-  transform: translateX(2px);
-}
-.sidebar-btn.active {
-  font-weight: bold;
-}
-
-/* Main content */
-.dashboard-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Topbar */
-.dashboard-topbar {
+.staff-hero-card {
   display: flex;
   justify-content: space-between;
-  padding: 15px 20px;
-  background: #f5f5f5;
   align-items: center;
+  margin-bottom: 18px;
+  border-radius: 15px;
+  padding: 27px;
+  background: linear-gradient(120deg, #27234e, #5145a7);
+  color: #fff;
 }
-.dashboard-topbar .icon {
-  font-size: 1.2rem;
-  margin-right: 10px;
-  cursor: pointer;
+.staff-hero-card h3 {
+  margin: 17px 0 9px;
+  font:
+    700 23px "Plus Jakarta Sans",
+    sans-serif;
 }
-.profile-dropdown {
-  position: relative;
-  cursor: pointer;
+.staff-hero-card p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  color: #e1dffb;
+  font-size: 13px;
 }
-.profile-dropdown .dropdown-content {
-  display: none;
-  position: absolute;
-  right: 0;
+.staff-hero-card small {
+  color: #c7c2ef;
+}
+.staff-hero-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 29px;
+}
+.staff-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.staff-stat-grid > div {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 19px;
   background: #fff;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  z-index: 10;
-  min-width: 150px;
 }
-.profile-dropdown.show .dropdown-content {
-  display: block;
+.staff-stat-grid svg {
+  color: var(--primary);
+  font-size: 19px;
 }
-.dropdown-content button {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
+.staff-stat-grid strong {
+  font:
+    800 25px "Plus Jakarta Sans",
+    sans-serif;
 }
-
-/* Content */
-.dashboard-content {
-  padding: 20px;
+.staff-stat-grid span {
+  color: var(--muted);
+  font-size: 12px;
 }
-.card-section {
-  background: #f1f1f1;
-  padding: 20px;
-  border-radius: 6px;
-  margin-bottom: 20px;
+.staff-shifts {
+  max-width: 850px;
 }
-.overview-cards {
+.staff-shift {
   display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #eff0f4;
+  padding: 15px 4px;
 }
-.card {
-  flex: 1 1 200px;
-  background: #e0f2f1;
-  padding: 20px;
-  border-radius: 6px;
+.staff-shift:last-child {
+  border-bottom: 0;
+}
+.staff-shift-date {
+  display: grid;
+  width: 40px;
   text-align: center;
+  color: var(--primary);
 }
-.shift-preview, .overview-cards {
+.staff-shift-date strong {
+  font-size: 18px;
+}
+.staff-shift-date small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.staff-shift > div:not(.staff-shift-date) {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+.staff-shift > div span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.staff-shift > b {
+  color: var(--muted);
+  font-size: 12px;
+}
+.availability-panel,
+.notifications {
+  max-width: 850px;
+}
+.availability-days {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+  margin: 22px 0;
+}
+.availability-days button {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px 8px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 13px;
+}
+.availability-days button.selected {
+  border-color: #bdb5ff;
+  background: var(--violet-soft);
+  color: var(--primary);
+  font-weight: 700;
+}
+.availability-panel hr,
+.settings-panel hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+.day-off-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin-top: 16px;
+}
+.day-off-row .field {
+  flex: 1;
+}
+.notification-item {
+  display: flex;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding: 16px 0;
+}
+.notification-item:first-child {
+  padding-top: 0;
+}
+.notification-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.muted-dot {
+  background: #c8cbd7;
+}
+.notification-item strong {
+  font-size: 14px;
+}
+.notification-item p {
+  margin: 5px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.notification-item small {
+  color: #a2a7b5;
+  font-size: 11px;
+}
+.form-row {
+  display: flex;
+  align-items: end;
   gap: 15px;
-  margin-top: 15px;
 }
-.shift-card {
-  background: #f1f8f7;
-  padding: 15px;
-  border-radius: 6px;
-  min-width: 150px;
+.form-row .field {
+  flex: 1;
 }
-
-/* Buttons & Inputs */
-button, input {
-  font-family: Arial, sans-serif;
+.settings-panel hr {
+  margin: 28px 0;
 }
-button, .day-btn {
-  background: #00796b;
-  color: #fff;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 5px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-}
-button:hover, .day-btn:hover {
-  background: #004d40;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0,0,0,0.15);
-}
-button:active, .day-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-input {
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0 10px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-/* Availability buttons */
-.day-btn {
-  background: #f1f1f1;
-  color: #00796b;
-  border: 1px solid #00796b;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin: 5px 5px 5px 0;
-}
-.day-btn.selected {
-  background: #00796b;
-  color: #fff;
-}
-
-/* Save Availability */
-.save-availability-btn {
-  margin-top: 10px;
-}
-
-/* Tables */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-  text-align: left;
-}
-
-/* Footer */
-.dashboard-footer {
-  padding: 15px 20px;
-  background: #f5f5f5;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .staff-dashboard-wrapper {
-    flex-direction: column;
+@media (max-width: 650px) {
+  .staff-hero-card {
+    padding: 20px;
   }
-  .staff-dashboard-sidebar {
+  .staff-hero-icon {
+    display: none;
+  }
+  .staff-stat-grid {
+    gap: 8px;
+  }
+  .staff-stat-grid > div {
+    padding: 13px;
+  }
+  .staff-stat-grid strong {
+    font-size: 21px;
+  }
+  .staff-shift {
+    gap: 9px;
+  }
+  .staff-shift > b {
+    font-size: 10px;
+  }
+  .staff-shift .badge {
+    display: none;
+  }
+  .availability-days {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .day-off-row,
+  .form-row {
+    display: grid;
+    align-items: stretch;
+  }
+  .day-off-row .button,
+  .form-row .button {
     width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-  }
-  .sidebar-btn {
-    flex: 1 1 auto;
-    text-align: center;
-  }
-  .dashboard-topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .overview-cards, .shift-preview {
-    flex-direction: column;
-  }
-  .day-btn {
-    padding: 8px 12px;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .day-btn {
-    width: 100%;
-    margin-right: 0;
-    padding: 10px;
-    font-size: 0.85rem;
-  }
-  button, input {
-    font-size: 0.85rem;
   }
 }
