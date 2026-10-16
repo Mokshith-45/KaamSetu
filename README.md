@@ -1,158 +1,261 @@
 # KaamSetu
 
-> A calm, modern workforce-management workspace for small businesses and part-time teams.
+<p align="center">
+  <strong>Workforce management that keeps small teams moving.</strong><br />
+  Plan shifts, manage staff, and keep everyone aligned from one calm workspace.
+</p>
 
-KaamSetu helps shop owners plan shifts, manage staff, review coverage, and keep everyone aligned from one simple interface. Staff get a focused mobile-friendly view of their upcoming work, availability, and updates.
+<p align="center">
+  <a href="https://github.com/Mokshith-45/KaamSetu"><img src="https://img.shields.io/github/last-commit/Mokshith-45/KaamSetu?logo=git" alt="Last commit" /></a>
+  <a href="https://github.com/Mokshith-45/KaamSetu"><img src="https://img.shields.io/github/repo-size/Mokshith-45/KaamSetu?logo=github" alt="Repository size" /></a>
+  <a href="https://github.com/Mokshith-45/KaamSetu/issues"><img src="https://img.shields.io/github/issues/Mokshith-45/KaamSetu" alt="Open issues" /></a>
+  <a href="https://github.com/Mokshith-45/KaamSetu/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-not%20specified-lightgrey" alt="License not specified" /></a>
+</p>
 
-## Product overview
+## Overview
 
-### For owners
+KaamSetu is a React and Vite workforce-management application designed for small businesses and part-time teams. Owners can review staffing coverage, organize employees, prepare weekly schedules, and estimate payroll. Staff get a focused portal for upcoming shifts, availability, notifications, and profile settings.
 
-- Overview dashboard with staffing, hours, coverage, and open-gap summaries.
-- Shop setup for business details, hours, and required roles.
-- Staff management with search, roles, rates, availability, and status.
-- AI Shift Planner demo with draft generation, uncovered-shift indicators, and editable shifts.
-- Weekly schedule calendar and responsive shift list.
-- Reports and estimated payroll calculated from scheduled hours multiplied by hourly rates.
-- Profile and password settings backed by Supabase authentication.
+The current release is a polished frontend phase. Supabase authentication and profile operations are connected; scheduling, reporting, and several management actions intentionally use clearly labeled demo data until the production data services are implemented.
 
-### For staff
+## Highlights
 
-- Personalized overview with the next upcoming shift.
-- Weekly schedule with shift time, role, and shop details.
+### Owner workspace
+
+- Overview cards for staff, scheduled shifts, planned hours, and coverage gaps.
+- Shop setup form for business details, hours, and required roles.
+- Searchable staff-management table with role, rate, availability, and status.
+- AI Shift Planner demo with loading state, draft shifts, conflict indicators, and regeneration.
+- Weekly schedule calendar with responsive list presentation.
+- Estimated payroll reports using `scheduled hours × hourly rate`.
+- Profile and password settings connected to Supabase.
+
+### Staff portal
+
+- Personalized next-shift overview.
+- Weekly schedule with role, hours, shop, and confirmation status.
 - Availability preferences and day-off request interface.
 - Notifications and announcements.
 - Profile and password settings.
+- Mobile-first layout for quick access between shifts.
 
 ### Public experience
 
 - Responsive landing page with product preview and feature sections.
-- Supabase email/password sign-up and login.
-- Owner/staff role selection during registration.
+- Email/password authentication through Supabase.
+- Owner/staff role selection during sign-up.
 - About and Contact pages.
-- Styled 404 fallback for unknown routes.
+- Styled fallback page for unknown routes.
 
 ## Tech stack
 
-- React 19
-- Vite
-- React Router
-- Supabase JavaScript client
-- React Icons
-- ESLint
-- CSS with shared design tokens and responsive layouts
+| Layer | Technology |
+| --- | --- |
+| UI | React 19 |
+| Build tool | Vite |
+| Routing | React Router |
+| Authentication/data | Supabase JavaScript client |
+| Icons | React Icons |
+| Styling | CSS design tokens and responsive layouts |
+| Quality | ESLint |
 
-The `backend/` directory is reserved for future server-side integrations. The current frontend connects directly to Supabase for authentication and profile operations.
+## Prerequisites
 
-## Repository structure
+Before starting, install:
 
-```text
-KaamSetu/
-├── frontend/
-│   ├── src/
-│   │   ├── components/       Shared dashboard layout and navigation
-│   │   ├── pages/            Landing, auth, dashboards, About, Contact
-│   │   ├── App.jsx           Application routes
-│   │   ├── index.css         Global design tokens and primitives
-│   │   └── supabaseClient.js Supabase browser client
-│   ├── package.json
-│   └── vite.config.js
-├── backend/                  Reserved for future server-side services
-├── package.json              Root convenience scripts
-└── README.md
+- [Node.js](https://nodejs.org/) 18 or newer
+- npm
+- A Supabase project with email/password authentication enabled
+
+## Quick start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Mokshith-45/KaamSetu.git
+cd KaamSetu
 ```
 
-## Getting started
-
-### Requirements
-
-- Node.js 18 or newer
-- npm
-- A Supabase project for authentication and profile data
-
-### Install
-
-From the repository root:
+### 2. Install dependencies
 
 ```bash
 npm install
 npm install --prefix frontend
 ```
 
-### Configure Supabase
+### 3. Configure Supabase
 
-Create `frontend/.env` using the available example file:
+Create `frontend/.env` from `frontend/.env.example`:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
 
-The browser client uses only the public Supabase URL and anon key. Never put a service-role key or another private credential in a `VITE_*` variable.
+The browser client reads these values from [supabaseClient.js](./frontend/src/supabaseClient.js). Only use the public anon key in the frontend. Never expose a Supabase service-role key through a `VITE_*` variable.
 
-The current authentication flow expects these Supabase tables and fields:
+The current authentication flow expects the following tables and fields:
 
-- `profiles`: `id`, `full_name`, `user_type`
-- `staff_roles`: `staff_id`, `role`
-- `attendance_logs`: used by legacy attendance integrations where available
+```text
+profiles
+├── id
+├── full_name
+└── user_type        owner | staff
 
-Row Level Security should be configured in Supabase before using the application with real users.
+staff_roles
+├── staff_id
+└── role
+```
 
-### Run locally
+`attendance_logs` may be used by existing attendance integrations where that table is available. Configure Row Level Security before connecting real users.
+
+### 4. Start the development server
 
 ```bash
 npm run dev
 ```
 
-The frontend development server is normally available at the Vite URL shown in the terminal.
+Open the local URL printed by Vite, usually `http://localhost:5173`.
 
-## Scripts
+## Commands
 
-Run from the repository root:
+Run these from the repository root:
 
 ```bash
-npm run dev       # Start the frontend development server
-npm run lint      # Run ESLint
-npm run build     # Create a production build
-npm run preview   # Preview the production build locally
+# Start the frontend development server
+npm run dev
+
+# Check JavaScript and JSX with ESLint
+npm run lint
+
+# Create a production build
+npm run build
+
+# Serve the production build locally
+npm run preview
 ```
 
-Equivalent commands can be run from `frontend/` with `npm run dev`, `npm run lint`, `npm run build`, and `npm run preview`.
+The same commands are available from `frontend/` using that directory's `package.json`.
 
-## Routes
+## Usage
 
-| Route | Purpose |
+### Create an account
+
+1. Open `/`.
+2. Select **Get started**.
+3. Choose **Shop owner** or **Staff member**.
+4. Enter a name, email, and password.
+5. If Supabase email confirmation is enabled, confirm the email before signing in.
+
+### Sign in
+
+```text
+Landing page → Sign in → email/password → role-specific dashboard
+```
+
+After login, KaamSetu reads the user's `profiles.user_type` value and routes the user to:
+
+```text
+owner  → /owner-dashboard
+staff  → /staff-dashboard
+```
+
+### Explore the main routes
+
+| Route | Description |
 | --- | --- |
 | `/` | Landing page and authentication |
 | `/owner-dashboard` | Owner workspace |
 | `/staff-dashboard` | Staff portal |
-| `/about` | Product story and values |
-| `/contact` | Contact form demo |
-| `*` | 404 fallback |
+| `/about` | Product purpose, values, and benefits |
+| `/contact` | Frontend-only contact form |
+| Any unknown path | Styled 404 fallback |
 
-## Demo data and current limitations
+### Demo scheduling flow
 
-This phase is a frontend redesign. Dashboard scheduling, staff-management additions, shop setup, availability changes, and payroll views use clearly labeled local/demo data where a production persistence API is not yet available. These interactions do not claim to save changes to Supabase.
+1. Sign in as an owner.
+2. Open **AI Shift Planner**.
+3. Choose a week and maximum hours.
+4. Select **Generate demo draft**.
+5. Review the draft shifts and uncovered-period indicator.
+6. Edit or remove draft items as needed.
 
-The Contact form also has a frontend-only success state and does not send or store a message on a server.
+The planner is intentionally local and safe: it does not call an AI provider, persist shifts, or expose an API key.
 
-The AI Shift Planner is intentionally a safe demo workflow. It does not call an AI provider, expose an API key, or create a fake backend endpoint. A future scheduling service can be connected behind the existing planner UI.
+## Project structure
 
-## Security and environment files
+```text
+KaamSetu/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   │   ├── DashboardLayout.jsx
+│   │   │   └── DashboardLayout.css
+│   │   ├── pages/
+│   │   │   ├── AuthPage.jsx
+│   │   │   ├── OwnerDashboard.jsx
+│   │   │   ├── StaffDashboard.jsx
+│   │   │   ├── About.jsx
+│   │   │   └── Contact.jsx
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   ├── main.jsx
+│   │   └── supabaseClient.js
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.js
+├── backend/
+│   ├── src/                  Reserved for future server-side services
+│   ├── tests/
+│   └── .env.example
+├── package.json              Root convenience scripts
+└── README.md
+```
 
-- Do not commit `frontend/.env` or `backend/.env`.
-- Do not expose Supabase service-role credentials to the browser.
-- Keep authorization enforced by Supabase policies/backend services; hiding an owner route in the UI is not a security boundary.
-- Do not run destructive database migrations against a production Supabase project without review.
+## Architecture notes
+
+- Shared dashboard navigation and responsive layout live in `frontend/src/components/`.
+- Page-specific presentation remains alongside each page in `frontend/src/pages/`.
+- Global colors, typography, focus states, buttons, fields, and badges are defined in `frontend/src/index.css`.
+- Supabase authentication is kept in the existing frontend client rather than introducing a second backend.
+- Demo operations are kept separate from Supabase calls so production scheduling and persistence can be added later.
+
+## Demo limitations
+
+This repository currently focuses on the frontend experience:
+
+- Dashboard schedules and staff records are demo/local data where production APIs are not available.
+- Shop setup, availability, and planner changes do not claim to persist to Supabase.
+- Payroll is an estimated calculation based on displayed mock hours and rates.
+- The Contact form displays a local success state and does not deliver or store messages.
+- The AI Shift Planner does not use an external AI service.
+- Frontend route visibility is not a replacement for backend authorization or Supabase Row Level Security.
+
+## Security
+
+- Keep `frontend/.env` and `backend/.env` out of version control.
+- Use only the Supabase anon key in browser-exposed environment variables.
+- Never commit passwords, service-role keys, tokens, or private credentials.
+- Configure Supabase policies before using real business data.
+- Do not run destructive database migrations against a production project without review.
 
 ## Contributing
 
-1. Create a focused branch for your change.
-2. Keep reusable UI in `frontend/src/components/` and page-specific UI in `frontend/src/pages/`.
-3. Preserve existing authentication and route behavior unless the change explicitly requires otherwise.
-4. Run `npm run lint` and `npm run build` before opening a pull request.
-5. Document any new environment variables or Supabase schema requirements.
+1. Create a focused branch.
+2. Keep reusable UI in `frontend/src/components/`.
+3. Keep page-specific UI in `frontend/src/pages/`.
+4. Preserve authentication and route behavior unless the change requires otherwise.
+5. Document new environment variables or Supabase schema requirements.
+6. Run the checks below before opening a pull request:
+
+```bash
+npm run lint
+npm run build
+```
 
 ## License
 
-No license has been declared for this repository yet. Contact the repository owner before redistributing the code.
+No open-source license has been declared for KaamSetu yet. Until a license is added to the repository, all rights remain with the copyright holder. Contact the repository owner before redistributing or using this code outside the repository.
