@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { FiArrowLeft, FiCheck, FiMail } from "react-icons/fi";
 import { Link, useSearchParams } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 import "./Contact.css";
+
+const initialForm = { name: "", email: "", message: "" };
+const MAX_LENGTHS = { name: 120, email: 254, message: 5000 };
 
 export default function Contact() {
   const [searchParams] = useSearchParams();
@@ -12,14 +16,55 @@ export default function Contact() {
     ? requestedReturnPath
     : "/";
   const returnLabel = returnPath === "/" ? "Back to home" : "Back to dashboard";
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState(initialForm);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const update = (key) => (event) =>
     setForm({ ...form, [key]: event.target.value });
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
+    if (saving) return;
+
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const message = form.message.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!name || !email || !message) {
+      setError("Please complete your name, email, and message.");
+      return;
+    }
+    if (
+      name.length > MAX_LENGTHS.name ||
+      email.length > MAX_LENGTHS.email ||
+      message.length > MAX_LENGTHS.message
+    ) {
+      setError("Please shorten your message or one of the other fields.");
+      return;
+    }
+    if (!emailPattern.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    setError("");
+    setSaving(true);
+    const { error: insertError } = await supabase
+      .from("contact_messages")
+      .insert([{ name, email, message }]);
+
+    if (insertError) {
+      setError(
+        "We could not save your message right now. Please try again shortly.",
+      );
+      setSaving(false);
+      return;
+    }
+
+    setForm(initialForm);
     setSent(true);
-    setForm({ name: "", email: "", message: "" });
+    setSaving(false);
   };
   return (
     <div className="info-page">
@@ -65,8 +110,8 @@ export default function Contact() {
               <FiCheck />
               <h3>Thanks for reaching out.</h3>
               <p>
-                Your message is ready for the KaamSetu team. This frontend demo
-                does not send messages to a server.
+                Your message has been received. The KaamSetu team will review
+                it and get back to you.
               </p>
               <button
                 className="button button-secondary"
@@ -76,11 +121,12 @@ export default function Contact() {
               </button>
             </div>
           ) : (
-            <form onSubmit={submit}>
+            <form onSubmit={submit} noValidate>
               <label className="field">
                 Name
                 <input
                   required
+                  maxLength={MAX_LENGTHS.name}
                   value={form.name}
                   onChange={update("name")}
                   placeholder="Your name"
@@ -91,6 +137,7 @@ export default function Contact() {
                 <input
                   type="email"
                   required
+                  maxLength={MAX_LENGTHS.email}
                   value={form.email}
                   onChange={update("email")}
                   placeholder="you@company.com"
@@ -100,15 +147,17 @@ export default function Contact() {
                 Message
                 <textarea
                   required
+                  maxLength={MAX_LENGTHS.message}
                   value={form.message}
                   onChange={update("message")}
                   placeholder="How can we help?"
                 />
               </label>
-              <button className="button button-primary">Send message</button>
-              <small className="muted">
-                Demo only — no message is delivered or stored.
-              </small>
+              <button className="button button-primary" disabled={saving}>
+                {saving ? "Sending…" : "Send message"}
+              </button>
+              {error && <p className="contact-error" role="alert">{error}</p>}
+              <small className="muted">We’ll only use your details to respond to your message.</small>
             </form>
           )}
         </section>
