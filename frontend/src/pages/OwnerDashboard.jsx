@@ -19,7 +19,7 @@ const demoStaff = [
     id: 1,
     name: "Ananya Kapoor",
     role: "Cashier",
-    rate: 14,
+    rate: 140,
     availability: "Mon – Fri",
     status: "Active",
   },
@@ -27,7 +27,7 @@ const demoStaff = [
     id: 2,
     name: "Rahul Mehta",
     role: "Stock lead",
-    rate: 16,
+    rate: 160,
     availability: "Tue – Sat",
     status: "Active",
   },
@@ -35,7 +35,7 @@ const demoStaff = [
     id: 3,
     name: "Maya Joseph",
     role: "Floor assistant",
-    rate: 13,
+    rate: 130,
     availability: "Weekends",
     status: "Active",
   },
@@ -74,6 +74,12 @@ const demoShifts = [
     color: "purple",
   },
 ];
+const formatINR = (amount) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
 
 export default function OwnerDashboard() {
   const [name, setName] = useState("Owner");
@@ -376,7 +382,7 @@ export default function OwnerDashboard() {
                       <strong>{person.name}</strong>
                     </td>
                     <td>{person.role}</td>
-                    <td>${person.rate}/hr</td>
+                    <td>{formatINR(person.rate)}/hr</td>
                     <td>{person.availability}</td>
                     <td>
                       <span className="badge badge-success">
@@ -470,7 +476,7 @@ export default function OwnerDashboard() {
             />
             <Stat
               label="Estimated payroll"
-              value="$1,248"
+              value={formatINR(12440)}
               detail="Hours × hourly rate"
               tone="green"
             />
@@ -492,10 +498,10 @@ export default function OwnerDashboard() {
                       <strong>{person.name}</strong>
                     </td>
                     <td>{[25, 31.5, 30][index]}h</td>
-                    <td>${person.rate}/hr</td>
+                    <td>{formatINR(person.rate)}/hr</td>
                     <td>
                       <strong>
-                        ${[350, 504, 390][index].toLocaleString()}
+                        {formatINR([3500, 5040, 3900][index])}
                       </strong>
                     </td>
                   </tr>
