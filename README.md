@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/Mokshith-45/KaamSetu"><img src="https://img.shields.io/github/last-commit/Mokshith-45/KaamSetu?logo=git" alt="Last commit" /></a>
-  <a href="https://github.com/Mokshith-45/KaamSetu"><img src="https://img.shields.io/github/repo-size/Mokshith-45/KaamSetu?logo=github" alt="Repository size" /></a>
+  <a href="#tech-stack"><img src="https://img.shields.io/badge/stack-React%20%7C%20Vite%20%7C%20Supabase-5b4bdb" alt="Tech stack: React, Vite, and Supabase" /></a>
   <a href="https://github.com/Mokshith-45/KaamSetu/issues"><img src="https://img.shields.io/github/issues/Mokshith-45/KaamSetu" alt="Open issues" /></a>
   <a href="https://github.com/Mokshith-45/KaamSetu/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-not%20specified-lightgrey" alt="License not specified" /></a>
 </p>
