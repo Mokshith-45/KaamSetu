@@ -8,6 +8,7 @@ import {
   FiMapPin,
   FiSearch,
   FiSend,
+  FiTrash2,
   FiX,
 } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -70,6 +71,7 @@ export default function StaffDashboard() {
   const [joinLoading, setJoinLoading] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
   const [codeSubmitting, setCodeSubmitting] = useState(false);
+  const [historyClearing, setHistoryClearing] = useState(false);
   const realtimeChannelRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -221,6 +223,52 @@ export default function StaffDashboard() {
     );
     if (!error) loadStaffData();
   };
+  const getShopMembership = (shopId) =>
+    myShops.find((shop) => (shop.shop_id || shop.id) === shopId);
+  const getLatestShopRequest = (shopId) =>
+    requests
+      .filter((request) => (request.shop_id || request.shop?.id) === shopId)
+      .sort(
+        (left, right) =>
+          new Date(right.requested_at || right.created_at || 0) -
+          new Date(left.requested_at || left.created_at || 0),
+      )[0];
+  const getDiscoveryAction = (shopId) => {
+    const membership = getShopMembership(shopId);
+    const membershipStatus = String(membership?.membership_status || "").toLowerCase();
+    if (["joined", "active"].includes(membershipStatus)) {
+      return { label: "Joined", disabled: true };
+    }
+    const requestStatus = String(getLatestShopRequest(shopId)?.request_status || "").toLowerCase();
+    if (requestStatus === "pending") {
+      return { label: "Pending approval", disabled: true };
+    }
+    if (membershipStatus === "removed") {
+      return { label: "Request to join again", disabled: false };
+    }
+    return { label: "Request to join", disabled: false };
+  };
+  const clearMyRequestHistory = async () => {
+    if (!window.confirm("Clear your approved and rejected join-request history?")) {
+      return;
+    }
+    setHistoryClearing(true);
+    const { error } = await supabase.rpc("clear_my_shop_request_history");
+    setHistoryClearing(false);
+    if (error) {
+      setNotice(`Could not clear request history: ${error.message}`);
+      return;
+    }
+    setRequests((current) =>
+      current.filter(
+        (request) =>
+          !["approved", "rejected"].includes(
+            String(request.request_status || request.status).toLowerCase(),
+          ),
+      ),
+    );
+    setNotice("Your completed request history was cleared.");
+  };
   const logout = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -362,13 +410,16 @@ export default function StaffDashboard() {
                       <span><FiMapPin /> {shop.address || "Address not provided"}</span>
                       <small>{shop.timezone || "Asia/Kolkata"}</small>
                     </div>
-                    <button
+                    {(() => {
+                      const action = getDiscoveryAction(shop.id);
+                      return <button
                       className="button button-secondary"
                       onClick={() => requestToJoin(shop.id)}
-                      disabled={joinLoading === shop.id}
+                      disabled={action.disabled || joinLoading === shop.id}
                     >
-                      {joinLoading === shop.id ? "Sending…" : "Request to join"}
-                    </button>
+                      {joinLoading === shop.id ? "Sending…" : action.label}
+                    </button>;
+                    })()}
                   </article>
                 ))}
               </div>
@@ -396,7 +447,23 @@ export default function StaffDashboard() {
             </form>
           </section>
           <section className="panel">
-            <div className="panel-title"><h3>My requests</h3></div>
+            <div className="panel-title">
+              <h3>My requests</h3>
+              {requests.some((request) =>
+                ["approved", "rejected"].includes(
+                  String(request.request_status || request.status).toLowerCase(),
+                ),
+              ) && (
+                <button
+                  className="button button-ghost"
+                  onClick={clearMyRequestHistory}
+                  disabled={historyClearing}
+                >
+                  <FiTrash2 />
+                  {historyClearing ? "Clearing…" : "Clear history"}
+                </button>
+              )}
+            </div>
             {staffDataLoading ? <p className="form-status">Loading requests…</p> : requests.length ? requests.map((request) => (
               <div className="onboarding-row" key={request.request_id || request.id}>
                 <div><strong>{request.shop_name || request.name}</strong><small>{new Date(request.requested_at || request.created_at).toLocaleDateString()}</small></div>
@@ -409,8 +476,8 @@ export default function StaffDashboard() {
             {staffDataLoading ? <p className="form-status">Loading shops…</p> : myShops.length ? myShops.map((shop) => (
               <div className="onboarding-row" key={shop.id}>
                 <div><strong>{shop.shop_name || shop.name}</strong><small>{shop.address || "Address not provided"}</small></div>
-                <span className={`request-status ${String(shop.membership_status).toLowerCase() === "active" ? "request-approved" : "request-removed"}`}>
-                  {String(shop.membership_status).toLowerCase() === "active" ? "Joined" : "Removed"}
+                <span className={`request-status ${["joined", "active"].includes(String(shop.membership_status).toLowerCase()) ? "request-approved" : "request-removed"}`}>
+                  {["joined", "active"].includes(String(shop.membership_status).toLowerCase()) ? "Joined" : "Removed"}
                 </span>
               </div>
             )) : <p className="empty-state">No approved shops yet.</p>}

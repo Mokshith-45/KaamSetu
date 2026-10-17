@@ -9,6 +9,7 @@ import {
   FiPlus,
   FiRefreshCw,
   FiShoppingBag,
+  FiTrash2,
   FiUserCheck,
   FiUserX,
   FiX,
@@ -597,6 +598,43 @@ export default function OwnerDashboard() {
     );
     if (!error) loadWorkforceData();
   };
+  const deleteInvitation = async (invitationId) => {
+    if (!shopId || !window.confirm("Permanently delete this revoked invitation?")) {
+      return;
+    }
+    setWorkforceAction(`delete-invitation-${invitationId}`);
+    const { error } = await supabase.rpc("delete_shop_invitation", {
+      p_invitation_id: invitationId,
+      p_shop_id: shopId,
+    });
+    setWorkforceAction("");
+    if (error) {
+      showNotice(`Could not delete invitation: ${error.message}`, true);
+      return;
+    }
+    setInvitations((current) =>
+      current.filter((invitation) => (invitation.invitation_id || invitation.id) !== invitationId),
+    );
+    showNotice("Revoked invitation permanently deleted.");
+  };
+  const clearJoinRequestHistory = async () => {
+    if (!shopId || !window.confirm("Clear all approved and rejected join requests for this shop?")) {
+      return;
+    }
+    setWorkforceAction("clear-request-history");
+    const { error } = await supabase.rpc("clear_shop_join_request_history", {
+      p_shop_id: shopId,
+    });
+    setWorkforceAction("");
+    if (error) {
+      showNotice(`Could not clear request history: ${error.message}`, true);
+      return;
+    }
+    setJoinRequests((current) =>
+      current.filter((request) => String(request.request_status || request.status).toLowerCase() === "pending"),
+    );
+    showNotice("Completed join-request history cleared.");
+  };
   const removeStaff = async (staffUserId) => {
     if (!shopId || !window.confirm("Remove this staff member from your shop?")) {
       return;
@@ -1093,7 +1131,12 @@ export default function OwnerDashboard() {
                 )) : <p className="empty-state">No approved staff members yet.</p>}
               </section>
               <section className="panel workforce-section">
-                <PanelTitle title="Join requests" action={joinRequests.filter((request) => (request.request_status || request.status) === "pending").length ? `${joinRequests.filter((request) => (request.request_status || request.status) === "pending").length} pending` : "No pending requests"} />
+                <PanelTitle title="Join requests" action={joinRequests.filter((request) => String(request.request_status || request.status).toLowerCase() === "pending").length ? `${joinRequests.filter((request) => String(request.request_status || request.status).toLowerCase() === "pending").length} pending` : "No pending requests"} />
+                {joinRequests.some((request) => ["approved", "rejected"].includes(String(request.request_status || request.status).toLowerCase())) && (
+                  <button className="button button-ghost" onClick={clearJoinRequestHistory} disabled={Boolean(workforceAction)}>
+                    <FiTrash2 /> {workforceAction === "clear-request-history" ? "Clearing…" : "Clear history"}
+                  </button>
+                )}
                 {joinRequests.length ? joinRequests.map((request) => {
                   const status = String(request.request_status || request.status).toLowerCase();
                   return (
@@ -1129,7 +1172,10 @@ export default function OwnerDashboard() {
                     return (
                       <div className="onboarding-row" key={invitationId}>
                         <div><strong>{revoked ? "Revoked invitation" : invitation.expires_at && new Date(invitation.expires_at) < new Date() ? "Expired invitation" : "Active invitation"}</strong><small>Created {new Date(invitation.created_at).toLocaleDateString()} · Expires {new Date(invitation.expires_at).toLocaleDateString()} · {invitation.uses_count || 0}/{invitation.max_uses || 0} uses · Hint KS-****-{invitation.code_hint || "????"}</small></div>
-                        {!revoked && <button className="button button-ghost" onClick={() => revokeInvitation(invitationId)} disabled={Boolean(workforceAction)}>{workforceAction === `revoke-${invitationId}` ? "Revoking…" : "Revoke"}</button>}
+                        <div className="inline-actions">
+                          {!revoked && <button className="button button-ghost" onClick={() => revokeInvitation(invitationId)} disabled={Boolean(workforceAction)}>{workforceAction === `revoke-${invitationId}` ? "Revoking…" : "Revoke"}</button>}
+                          {revoked && <button className="button button-ghost" onClick={() => deleteInvitation(invitationId)} disabled={Boolean(workforceAction)}><FiTrash2 /> {workforceAction === `delete-invitation-${invitationId}` ? "Deleting…" : "Delete"}</button>}
+                        </div>
                       </div>
                     );
                   }) : <p className="empty-state">No invitations generated yet.</p>}
