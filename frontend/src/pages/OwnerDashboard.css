@@ -28,6 +28,11 @@
   background: transparent;
   color: inherit;
 }
+.inline-notice-error {
+  border-color: #f0c9d0;
+  background: #fff3f5;
+  color: #b33b52;
+}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -194,7 +199,66 @@
   font-size: 12px;
 }
 .form-panel {
-  max-width: 760px;
+  max-width: 900px;
+}
+.shop-setup-stack {
+  display: grid;
+  gap: 18px;
+  max-width: 900px;
+}
+.shop-summary-card,
+.shop-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(31, 35, 61, 0.03);
+}
+.shop-summary-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--violet-soft);
+  color: var(--primary);
+  font-size: 23px;
+}
+.shop-summary-copy {
+  min-width: 0;
+  flex: 1;
+}
+.shop-summary-copy h3,
+.shop-empty-state h3 {
+  margin: 4px 0 7px;
+  font: 700 19px "Plus Jakarta Sans", sans-serif;
+}
+.shop-summary-copy p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 3px 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 12px;
+}
+.shop-empty-state {
+  display: grid;
+  justify-items: start;
+  color: var(--muted);
+}
+.shop-empty-state > svg {
+  color: var(--primary);
+  font-size: 28px;
+}
+.shop-empty-state p {
+  margin: 0 0 6px;
 }
 .form-grid {
   display: grid;
@@ -209,6 +273,93 @@
   display: flex;
   gap: 10px;
   grid-column: 1/-1;
+}
+.form-status {
+  color: var(--muted);
+}
+.business-hours-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.business-hours-heading h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.business-hours-heading p {
+  margin: 0;
+  font-size: 12px;
+}
+.timezone-picker {
+  position: relative;
+}
+.timezone-picker input {
+  min-width: 0;
+}
+.timezone-options {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(31, 35, 61, 0.14);
+}
+.timezone-options button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 10px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font-size: 12px;
+}
+.timezone-options button:hover,
+.timezone-options button.is-highlighted {
+  background: var(--violet-soft);
+  color: var(--primary-dark);
+}
+.timezone-no-results {
+  display: block;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.business-hours {
+  display: grid;
+  gap: 9px;
+}
+.business-day {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 130px auto 130px 54px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+}
+.business-day-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.business-day-name input {
+  width: auto;
+}
+.business-day > input {
+  min-width: 0;
+}
+.business-day-status {
+  color: var(--muted);
+  font-size: 12px;
 }
 .button svg {
   vertical-align: middle;
@@ -363,6 +514,26 @@ td:first-child {
   }
   .planner-controls .field {
     width: 100%;
+  }
+  .business-day {
+    grid-template-columns: 1fr 1fr;
+  }
+  .business-day > span {
+    display: none;
+  }
+  .business-day-status {
+    text-align: right;
+  }
+  .shop-summary-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .shop-summary-card .button {
+    width: 100%;
+  }
+  .business-hours-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .shift-time {
     font-size: 11px;
