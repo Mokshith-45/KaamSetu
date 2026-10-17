@@ -12,7 +12,7 @@ import {
   FiX,
   FiZap,
 } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DashboardLayout from "../components/DashboardLayout";
 import "./OwnerDashboard.css";
@@ -200,7 +200,18 @@ export default function OwnerDashboard() {
   const [timezoneHighlight, setTimezoneHighlight] = useState(0);
   const [password, setPassword] = useState("");
   const noticeTimeoutRef = useRef(null);
+  const location = useLocation();
   const navigate = useNavigate();
+  const routeSection =
+    {
+      "/owner-dashboard": "overview",
+      "/owner-dashboard/shop-setup": "shopSetup",
+      "/owner-dashboard/staff-management": "staffManagement",
+      "/owner-dashboard/ai-shift-planner": "aiShiftPlanner",
+      "/owner-dashboard/schedule": "schedule",
+      "/owner-dashboard/reports": "reports",
+      "/owner-dashboard/settings": "settings",
+    }[location.pathname] || "overview";
   const filteredTimeZones = useMemo(() => {
     const query = timezoneQuery.trim().toLowerCase();
     if (!query) return timeZoneOptions;
@@ -334,6 +345,9 @@ export default function OwnerDashboard() {
       }
     };
   }, []);
+  useEffect(() => {
+    setActive(routeSection);
+  }, [routeSection]);
   const filteredStaff = useMemo(
     () =>
       staff.filter((person) =>
@@ -382,6 +396,13 @@ export default function OwnerDashboard() {
   const changeActiveSection = (section) => {
     clearNotice();
     setActive(section);
+    navigate(
+      `/owner-dashboard${
+        section === "overview"
+          ? ""
+          : `/${section.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
+      }`,
+    );
   };
   const updateBusinessDay = (day, key, value) => {
     setShop((current) => ({

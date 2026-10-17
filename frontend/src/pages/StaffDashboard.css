@@ -1,4 +1,5 @@
 .staff-hero-card {
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -21,6 +22,7 @@
   margin: 0 0 8px;
   color: #e1dffb;
   font-size: 13px;
+  flex-wrap: wrap;
 }
 .staff-hero-card small {
   color: #c7c2ef;
@@ -41,6 +43,7 @@
   margin-bottom: 18px;
 }
 .staff-stat-grid > div {
+  min-width: 0;
   display: grid;
   gap: 8px;
   border: 1px solid var(--line);
@@ -88,6 +91,7 @@
   font-size: 11px;
 }
 .staff-shift > div:not(.staff-shift-date) {
+  min-width: 0;
   display: grid;
   gap: 4px;
   flex: 1;
@@ -99,6 +103,7 @@
 .staff-shift > b {
   color: var(--muted);
   font-size: 12px;
+  white-space: nowrap;
 }
 .availability-panel,
 .notifications {
@@ -181,6 +186,7 @@
   gap: 15px;
 }
 .form-row .field {
+  min-width: 0;
   flex: 1;
 }
 .settings-panel hr {
@@ -189,6 +195,9 @@
 @media (max-width: 650px) {
   .staff-hero-card {
     padding: 20px;
+  }
+  .staff-hero-card h3 {
+    font-size: 20px;
   }
   .staff-hero-icon {
     display: none;
@@ -203,10 +212,32 @@
     font-size: 21px;
   }
   .staff-shift {
+    min-width: 0;
     gap: 9px;
+  }
+  .staff-shift > div:not(.staff-shift-date) strong,
+  .staff-shift > div:not(.staff-shift-date) span {
+    overflow-wrap: anywhere;
   }
   .staff-shift > b {
     font-size: 10px;
+  }
+  @media (max-width: 380px) {
+    .staff-stat-grid {
+      grid-template-columns: 1fr;
+    }
+    .staff-stat-grid > div {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+    }
+    .staff-stat-grid span {
+      grid-column: 2;
+    }
+    .staff-shift > b {
+      max-width: 74px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   .staff-shift .badge {
     display: none;

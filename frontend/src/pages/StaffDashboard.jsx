@@ -7,7 +7,7 @@ import {
   FiSend,
   FiX,
 } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DashboardLayout from "../components/DashboardLayout";
 import "./StaffDashboard.css";
@@ -48,7 +48,16 @@ export default function StaffDashboard() {
   const [days, setDays] = useState(["Monday", "Tuesday", "Friday"]);
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
+  const location = useLocation();
   const navigate = useNavigate();
+  const routeSection =
+    {
+      "/staff-dashboard": "overview",
+      "/staff-dashboard/my-shifts": "myShifts",
+      "/staff-dashboard/availability": "availability",
+      "/staff-dashboard/notifications": "notifications",
+      "/staff-dashboard/settings": "settings",
+    }[location.pathname] || "overview";
   useEffect(() => {
     (async () => {
       const {
@@ -64,6 +73,19 @@ export default function StaffDashboard() {
       if (data?.full_name) setName(data.full_name);
     })();
   }, []);
+  useEffect(() => {
+    setActive(routeSection);
+  }, [routeSection]);
+  const changeActiveSection = (section) => {
+    setActive(section);
+    navigate(
+      `/staff-dashboard${
+        section === "overview"
+          ? ""
+          : `/${section.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
+      }`,
+    );
+  };
   const logout = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -165,7 +187,7 @@ export default function StaffDashboard() {
               <h3>Coming up</h3>
               <button
                 className="text-button"
-                onClick={() => setActive("myShifts")}
+                onClick={() => changeActiveSection("myShifts")}
               >
                 See all <FiCalendar />
               </button>

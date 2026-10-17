@@ -1,5 +1,5 @@
 import { createElement, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FiBarChart2,
   FiCalendar,
@@ -40,6 +40,7 @@ export default function DashboardLayout({
   children,
 }) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const nav = role === "owner" ? ownerNav : staffNav;
   const title = nav.find(([id]) => id === activeSection)?.[1] || "Overview";
   return (
@@ -69,6 +70,13 @@ export default function DashboardLayout({
               onClick={() => {
                 setActiveSection(id);
                 setOpen(false);
+                navigate(
+                  `/${role}-dashboard${
+                    id === "overview"
+                      ? ""
+                      : `/${id.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`
+                  }`,
+                );
               }}
             >
               {createElement(Icon)}
