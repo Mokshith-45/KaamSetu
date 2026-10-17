@@ -20,6 +20,7 @@ const ownerRoutes = [
 ];
 const staffRoutes = [
   ["", "overview"],
+  ["/shop-discovery", "shopDiscovery"],
   ["/my-shifts", "myShifts"],
   ["/availability", "availability"],
   ["/notifications", "notifications"],

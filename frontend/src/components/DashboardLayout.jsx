@@ -25,9 +25,11 @@ const ownerNav = [
 ];
 const staffNav = [
   ["overview", "Overview", FiGrid],
+  ["shopDiscovery", "Find a shop", FiUsers],
   ["myShifts", "My shifts", FiCalendar],
   ["availability", "Availability", FiUsers],
   ["notifications", "Notifications", FiBell],
+  ["settings", "Settings", FiSettings],
 ];
 
 export default function DashboardLayout({

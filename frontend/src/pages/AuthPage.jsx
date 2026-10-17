@@ -1,5 +1,5 @@
 import { createElement, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   FiArrowRight,
   FiCheck,
@@ -43,6 +43,7 @@ export default function AuthPage() {
   });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
   const update = (key) => (event) =>
     setForm({ ...form, [key]: event.target.value });
@@ -99,11 +100,13 @@ export default function AuthPage() {
         if (profileError || !profile)
           throw new Error("Profile not found. Please contact support.");
         localStorage.setItem("userFullName", profile.full_name);
-        navigate(
-          profile.user_type === "owner"
+        const redirect = new URLSearchParams(location.search).get("redirect");
+        const dashboard =
+          redirect ||
+          (profile.user_type === "owner"
             ? "/owner-dashboard"
-            : "/staff-dashboard",
-        );
+            : "/staff-dashboard");
+        navigate(dashboard);
       }
     } catch (error) {
       setMessage(error.message || "Something went wrong.");

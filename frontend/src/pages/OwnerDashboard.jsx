@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FiArrowUpRight,
   FiCheck,
+  FiCopy,
   FiDownload,
   FiClock,
   FiMapPin,
   FiPlus,
   FiRefreshCw,
-  FiSearch,
   FiShoppingBag,
+  FiUserCheck,
+  FiUserX,
   FiX,
   FiZap,
 } from "react-icons/fi";
@@ -83,6 +85,26 @@ const formatINR = (amount) =>
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount);
+
+const invitationAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const normalizeInvitationCode = (value) =>
+  value.toUpperCase().replace(/[\s-]/g, "");
+const createInvitationCode = () => {
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  const raw = Array.from(
+    bytes,
+    (byte) => invitationAlphabet[byte % invitationAlphabet.length],
+  ).join("");
+  return `KS-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
+};
+const hashInvitationCode = async (code) => {
+  const encoded = new TextEncoder().encode(normalizeInvitationCode(code));
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+};
 
 const businessDays = [
   ["monday", "Monday"],
@@ -190,7 +212,6 @@ export default function OwnerDashboard() {
   const [editingShop, setEditingShop] = useState(false);
   const [shopLoading, setShopLoading] = useState(true);
   const [savingShop, setSavingShop] = useState(false);
-  const [query, setQuery] = useState("");
   const [draft, setDraft] = useState(demoShifts);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState("");
@@ -199,6 +220,12 @@ export default function OwnerDashboard() {
   const [timezoneOptionsOpen, setTimezoneOptionsOpen] = useState(false);
   const [timezoneHighlight, setTimezoneHighlight] = useState(0);
   const [password, setPassword] = useState("");
+  const [staffMembers, setStaffMembers] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [invitations, setInvitations] = useState([]);
+  const [workforceLoading, setWorkforceLoading] = useState(false);
+  const [workforceAction, setWorkforceAction] = useState("");
+  const [invitationCode, setInvitationCode] = useState("");
   const noticeTimeoutRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -348,15 +375,6 @@ export default function OwnerDashboard() {
   useEffect(() => {
     setActive(routeSection);
   }, [routeSection]);
-  const filteredStaff = useMemo(
-    () =>
-      staff.filter((person) =>
-        `${person.name} ${person.role}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-      ),
-    [staff, query],
-  );
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -456,6 +474,148 @@ export default function OwnerDashboard() {
     } else if (event.key === "Escape") {
       setTimezoneOptionsOpen(false);
     }
+  };
+
+  const loadWorkforceData = useCallback(async () => {
+    if (!shopId) return;
+    setWorkforceLoading(true);
+    const [staffResult, requestResult, invitationResult] = await Promise.all([
+      supabase.rpc("list_shop_staff", { p_shop_id: shopId }),
+      supabase.rpc("list_shop_join_requests", { p_shop_id: shopId }),
+      supabase.rpc("list_shop_invitations", { p_shop_id: shopId }),
+    ]);
+    setWorkforceLoading(false);
+    if (staffResult.error) {
+      setNotice(`Could not load staff: ${staffResult.error.message}`);
+      setNoticeIsError(true);
+    } else {
+      setStaffMembers(staffResult.data || []);
+    }
+    if (requestResult.error) {
+      setNotice(`Could not load join requests: ${requestResult.error.message}`);
+      setNoticeIsError(true);
+    } else {
+      setJoinRequests(requestResult.data || []);
+    }
+    if (invitationResult.error) {
+      setNotice(`Could not load invitations: ${invitationResult.error.message}`);
+      setNoticeIsError(true);
+    } else {
+      setInvitations(invitationResult.data || []);
+    }
+  }, [shopId]);
+  useEffect(() => {
+    if (active === "staffManagement" && shopId) {
+      loadWorkforceData();
+    }
+  }, [active, shopId, loadWorkforceData]);
+  useEffect(() => {
+    if (!shopId) return undefined;
+    const channel = supabase
+      .channel(`owner-workforce-${shopId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shop_join_requests", filter: `shop_id=eq.${shopId}` },
+        () => loadWorkforceData(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shop_members", filter: `shop_id=eq.${shopId}` },
+        () => loadWorkforceData(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [shopId, loadWorkforceData]);
+
+  const reviewJoinRequest = async (requestId, decision) => {
+    setWorkforceAction(`${decision}-${requestId}`);
+    const { error } = await supabase.rpc("review_shop_join_request", {
+      p_request_id: requestId,
+      p_decision: decision,
+    });
+    setWorkforceAction("");
+    showNotice(
+      error
+        ? `Could not ${decision} request: ${error.message}`
+        : `Join request ${decision}.`,
+      Boolean(error),
+    );
+    if (!error) loadWorkforceData();
+  };
+
+  const generateInvitation = async () => {
+    if (!shopId) return;
+    setWorkforceAction("generate-invitation");
+    const plaintextCode = createInvitationCode();
+    const codeHash = await hashInvitationCode(plaintextCode);
+    const normalizedCode = normalizeInvitationCode(plaintextCode);
+    const { data, error } = await supabase.rpc("create_shop_invitation", {
+      p_shop_id: shopId,
+      p_code_hash: codeHash,
+      p_code_hint: normalizedCode.slice(-4),
+      p_expires_in_days: 7,
+      p_max_uses: 20,
+    });
+    setWorkforceAction("");
+    if (error) {
+      showNotice(`Could not create invitation: ${error.message}`, true);
+      return;
+    }
+    const invitation = Array.isArray(data) ? data[0] : data;
+    if (!invitation) {
+      showNotice("The invitation was created without metadata.", true);
+      return;
+    }
+    setInvitationCode(plaintextCode);
+    setInvitations((current) => [invitation, ...current]);
+    showNotice("Invitation code generated. Copy it before leaving this screen.");
+  };
+
+  const copyInvitation = async () => {
+    if (!invitationCode) return;
+    try {
+      await navigator.clipboard.writeText(invitationCode);
+      showNotice("Invitation code copied.");
+    } catch (error) {
+      showNotice(`Could not copy invitation link: ${error.message}`, true);
+    }
+  };
+
+  const revokeInvitation = async (invitationId) => {
+    setWorkforceAction(`revoke-${invitationId}`);
+    const { error } = await supabase.rpc("revoke_shop_invitation", {
+      p_invitation_id: invitationId,
+    });
+    setWorkforceAction("");
+    showNotice(
+      error
+        ? `Could not revoke invitation: ${error.message}`
+        : "Invitation revoked.",
+      Boolean(error),
+    );
+    if (!error) loadWorkforceData();
+  };
+  const removeStaff = async (staffUserId) => {
+    if (!shopId || !window.confirm("Remove this staff member from your shop?")) {
+      return;
+    }
+    setWorkforceAction(`remove-${staffUserId}`);
+    const { error } = await supabase.rpc("remove_shop_staff", {
+      p_shop_id: shopId,
+      p_staff_user_id: staffUserId,
+    });
+    setWorkforceAction("");
+    if (error) {
+      showNotice(`Could not remove staff member: ${error.message}`, true);
+      return;
+    }
+    setStaffMembers((current) =>
+      current.filter((member) => (member.user_id || member.staff_id) !== staffUserId),
+    );
+    showNotice("Staff member removed.");
+    loadWorkforceData();
   };
 
   const cancelShopEdit = () => {
@@ -903,66 +1063,81 @@ export default function OwnerDashboard() {
         </div>
       )}
       {active === "staffManagement" && (
-        <section className="panel">
-          <PanelTitle
-            title="Staff management"
-            action={
-              <button className="button button-primary">
-                <FiPlus /> Add staff
-              </button>
-            }
-          />
-          <div className="table-toolbar">
-            <div className="search-box">
-              <FiSearch />
-              <input
-                placeholder="Search your team"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <span className="badge badge-neutral">
-              {filteredStaff.length} members
-            </span>
-          </div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Team member</th>
-                  <th>Role</th>
-                  <th>Rate</th>
-                  <th>Availability</th>
-                  <th>Status</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStaff.map((person) => (
-                  <tr key={person.id}>
-                    <td>
-                      <span className="table-avatar">
-                        {person.name.charAt(0)}
-                      </span>
-                      <strong>{person.name}</strong>
-                    </td>
-                    <td>{person.role}</td>
-                    <td>{formatINR(person.rate)}/hr</td>
-                    <td>{person.availability}</td>
-                    <td>
-                      <span className="badge badge-success">
-                        {person.status}
-                      </span>
-                    </td>
-                    <td>
-                      <button className="button button-ghost">Edit</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <div className="workforce-grid">
+          {!shopId ? (
+            <section className="panel empty-state-panel">
+              <FiShoppingBag />
+              <h3>Create your shop first</h3>
+              <p>Staff requests and invitations will appear here after shop setup.</p>
+            </section>
+          ) : workforceLoading ? (
+            <section className="panel"><p className="form-status" role="status">Loading staff management…</p></section>
+          ) : (
+            <>
+              <section className="panel workforce-section">
+                <PanelTitle title="My staff" action={`${staffMembers.length} approved`} />
+                {staffMembers.length ? staffMembers.map((member) => (
+                  <div className="onboarding-row" key={member.user_id || member.id}>
+                    <div><strong>{member.full_name || member.staff_name || member.name}</strong><small>{member.job_title || "Team member"} · Joined {new Date(member.joined_at || member.created_at).toLocaleDateString()}</small></div>
+                    <div className="inline-actions">
+                      <span className="badge badge-success">Approved</span>
+                      <button
+                        className="button button-ghost"
+                        onClick={() => removeStaff(member.user_id || member.staff_id)}
+                        disabled={Boolean(workforceAction)}
+                      >
+                        {workforceAction === `remove-${member.user_id || member.staff_id}` ? "Removing…" : "Remove"}
+                      </button>
+                    </div>
+                  </div>
+                )) : <p className="empty-state">No approved staff members yet.</p>}
+              </section>
+              <section className="panel workforce-section">
+                <PanelTitle title="Join requests" action={joinRequests.filter((request) => (request.request_status || request.status) === "pending").length ? `${joinRequests.filter((request) => (request.request_status || request.status) === "pending").length} pending` : "No pending requests"} />
+                {joinRequests.length ? joinRequests.map((request) => {
+                  const status = String(request.request_status || request.status).toLowerCase();
+                  return (
+                    <div className="onboarding-row" key={request.request_id || request.id}>
+                      <div><strong>{request.applicant_name || request.full_name || "Applicant"}</strong><small>Requested {new Date(request.requested_at || request.created_at).toLocaleDateString()}</small></div>
+                      {status === "pending" ? (
+                        <div className="inline-actions">
+                          <button className="button button-primary" onClick={() => reviewJoinRequest(request.request_id, "approved")} disabled={Boolean(workforceAction)}><FiUserCheck /> Approve</button>
+                          <button className="button button-ghost" onClick={() => reviewJoinRequest(request.request_id, "rejected")} disabled={Boolean(workforceAction)}><FiUserX /> Reject</button>
+                        </div>
+                      ) : <span className={`request-status request-${status}`}>{request.request_status || request.status}</span>}
+                    </div>
+                  );
+                }) : <p className="empty-state">No join requests yet.</p>}
+              </section>
+              <section className="panel workforce-section">
+                <PanelTitle title="Invite staff" />
+                <p className="muted">Generate a code that creates a pending request. New staff still require your approval.</p>
+                <button className="button button-primary" onClick={generateInvitation} disabled={Boolean(workforceAction)}>
+                  <FiPlus /> {workforceAction === "generate-invitation" ? "Generating…" : "Generate invitation code"}
+                </button>
+                {invitationCode && (
+                  <div className="invitation-link">
+                    <input value={invitationCode} readOnly aria-label="Generated invitation code" />
+                    <button className="button button-secondary" onClick={copyInvitation}><FiCopy /> Copy code</button>
+                  </div>
+                )}
+                {invitationCode && <p className="form-status">Copy this code before leaving the screen. It cannot be retrieved later.</p>}
+                <div className="invitation-list">
+                  {invitations.length ? invitations.map((invitation) => {
+                    const invitationId = invitation.invitation_id || invitation.id;
+                    const revoked = invitation.is_revoked || invitation.revoked_at;
+                    return (
+                      <div className="onboarding-row" key={invitationId}>
+                        <div><strong>{revoked ? "Revoked invitation" : invitation.expires_at && new Date(invitation.expires_at) < new Date() ? "Expired invitation" : "Active invitation"}</strong><small>Created {new Date(invitation.created_at).toLocaleDateString()} · Expires {new Date(invitation.expires_at).toLocaleDateString()} · {invitation.uses_count || 0}/{invitation.max_uses || 0} uses · Hint KS-****-{invitation.code_hint || "????"}</small></div>
+                        {!revoked && <button className="button button-ghost" onClick={() => revokeInvitation(invitationId)} disabled={Boolean(workforceAction)}>{workforceAction === `revoke-${invitationId}` ? "Revoking…" : "Revoke"}</button>}
+                      </div>
+                    );
+                  }) : <p className="empty-state">No invitations generated yet.</p>}
+                </div>
+              </section>
+            </>
+          )}
+        </div>
       )}
       {(active === "aiShiftPlanner" || active === "schedule") && (
         <section className="panel">

@@ -192,6 +192,52 @@
 .settings-panel hr {
   margin: 28px 0;
 }
+.staff-onboarding-grid .panel {
+  max-width: none;
+}
+.shop-discovery-panel {
+  max-width: none;
+}
+.staff-shop-search {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.shop-result-list {
+  display: grid;
+  gap: 10px;
+}
+.shop-result-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 14px;
+}
+.shop-result-card > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.shop-result-card span,
+.shop-result-card small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 12px;
+}
+.code-entry-form {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+.code-entry-form .field {
+  min-width: 0;
+  flex: 1;
+}
 @media (max-width: 650px) {
   .staff-hero-card {
     padding: 20px;
@@ -252,6 +298,20 @@
   }
   .day-off-row .button,
   .form-row .button {
+    width: 100%;
+  }
+  .shop-result-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .shop-result-card .button {
+    width: 100%;
+  }
+  .code-entry-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .code-entry-form .button {
     width: 100%;
   }
 }
