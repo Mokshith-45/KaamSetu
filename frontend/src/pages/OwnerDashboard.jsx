@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiArrowUpRight,
   FiCheck,
@@ -97,6 +97,7 @@ export default function OwnerDashboard() {
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState("");
   const [password, setPassword] = useState("");
+  const noticeTimeoutRef = useRef(null);
   const navigate = useNavigate();
   useEffect(() => {
     (async () => {
@@ -112,6 +113,11 @@ export default function OwnerDashboard() {
         .maybeSingle();
       if (data?.full_name) setName(data.full_name);
     })();
+    return () => {
+      if (noticeTimeoutRef.current) {
+        window.clearTimeout(noticeTimeoutRef.current);
+      }
+    };
   }, []);
   const filteredStaff = useMemo(
     () =>
@@ -150,6 +156,10 @@ export default function OwnerDashboard() {
       setDraft(demoShifts);
       setGenerating(false);
       setNotice("Demo draft generated. Nothing has been saved.");
+      noticeTimeoutRef.current = window.setTimeout(() => {
+        setNotice("");
+        noticeTimeoutRef.current = null;
+      }, 2500);
     }, 550);
   };
   const saveShop = (event) => {
