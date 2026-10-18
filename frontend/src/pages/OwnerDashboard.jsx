@@ -18,6 +18,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DashboardLayout from "../components/DashboardLayout";
+import { useCurrentDateLabel } from "../utils/currentDate";
 import "./OwnerDashboard.css";
 
 const demoStaff = [
@@ -203,6 +204,7 @@ const normalizeBusinessHours = (businessHours) => {
 };
 
 export default function OwnerDashboard() {
+  const currentDateLabel = useCurrentDateLabel();
   const [name, setName] = useState("Owner");
   const [email, setEmail] = useState("");
   const [staff] = useState(demoStaff);
@@ -227,6 +229,9 @@ export default function OwnerDashboard() {
   const [workforceLoading, setWorkforceLoading] = useState(false);
   const [workforceAction, setWorkforceAction] = useState("");
   const [invitationCode, setInvitationCode] = useState("");
+  const [timeOffRequests, setTimeOffRequests] = useState([]);
+  const [timeOffAction, setTimeOffAction] = useState("");
+  const [timeOffHistoryClearing, setTimeOffHistoryClearing] = useState(false);
   const noticeTimeoutRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -235,6 +240,7 @@ export default function OwnerDashboard() {
       "/owner-dashboard": "overview",
       "/owner-dashboard/shop-setup": "shopSetup",
       "/owner-dashboard/staff-management": "staffManagement",
+      "/owner-dashboard/time-off": "timeOff",
       "/owner-dashboard/ai-shift-planner": "aiShiftPlanner",
       "/owner-dashboard/schedule": "schedule",
       "/owner-dashboard/reports": "reports",
@@ -504,9 +510,65 @@ export default function OwnerDashboard() {
     } else {
       setInvitations(invitationResult.data || []);
     }
+    const { data: members, error: membersError } = await supabase
+      .from("shop_members")
+      .select("id, user_id, job_title, created_at, is_active")
+      .eq("shop_id", shopId)
+      .eq("is_active", true);
+    if (membersError) {
+      setTimeOffRequests([]);
+      setNotice(`Could not load shop memberships for time-off requests: ${membersError.message}`);
+      setNoticeIsError(true);
+      return;
+    }
+    const memberIds = (members || []).map((member) => member.id).filter(Boolean);
+    if (!memberIds.length) {
+      setTimeOffRequests([]);
+      return;
+    }
+    const { data: requestData, error: timeOffError } = await supabase
+      .from("time_off_requests")
+      .select("id, shop_member_id, start_date, end_date, reason, status, created_at")
+      .in("shop_member_id", memberIds)
+      .order("created_at", { ascending: false });
+    if (timeOffError) {
+      setNotice(`Could not load time-off requests: ${timeOffError.message}`);
+      setNoticeIsError(true);
+    } else {
+      const profilesByUserId = new Map();
+      const userIds = (members || []).map((member) => member.user_id).filter(Boolean);
+      if (userIds.length) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        if (profilesError) {
+          setNotice(`Could not load staff names: ${profilesError.message}`);
+          setNoticeIsError(true);
+        }
+        (profiles || []).forEach((profile) =>
+          profilesByUserId.set(profile.id, profile),
+        );
+      }
+      const staffByMemberId = new Map(
+        (members || []).map((member) => [
+          member.id,
+          {
+            ...member,
+            full_name: profilesByUserId.get(member.user_id)?.full_name,
+          },
+        ]),
+      );
+      setTimeOffRequests(
+        (requestData || []).map((request) => ({
+          ...request,
+          staff: staffByMemberId.get(request.shop_member_id),
+        })),
+      );
+    }
   }, [shopId]);
   useEffect(() => {
-    if (active === "staffManagement" && shopId) {
+    if (["staffManagement", "timeOff"].includes(active) && shopId) {
       loadWorkforceData();
     }
   }, [active, shopId, loadWorkforceData]);
@@ -522,6 +584,11 @@ export default function OwnerDashboard() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "shop_members", filter: `shop_id=eq.${shopId}` },
+        () => loadWorkforceData(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "time_off_requests" },
         () => loadWorkforceData(),
       )
       .subscribe();
@@ -654,6 +721,50 @@ export default function OwnerDashboard() {
     );
     showNotice("Staff member removed.");
     loadWorkforceData();
+  };
+  const reviewTimeOffRequest = async (requestId, decision) => {
+    setTimeOffAction(`${decision}-${requestId}`);
+    const { error } = await supabase.rpc("review_time_off_request", {
+      p_request_id: requestId,
+      p_decision: decision,
+    });
+    setTimeOffAction("");
+    if (error) {
+      showNotice(`Could not ${decision} time-off request: ${error.message}`, true);
+      return;
+    }
+    setTimeOffRequests((current) =>
+      current.map((request) =>
+        request.id === requestId
+          ? { ...request, status: decision }
+          : request,
+      ),
+    );
+    showNotice(`Time-off request ${decision}.`);
+    loadWorkforceData();
+  };
+  const clearTimeOffHistory = async () => {
+    if (
+      !shopId ||
+      !window.confirm(
+        "Permanently delete approved and rejected time-off requests for this shop? Pending and cancelled requests will remain.",
+      )
+    ) {
+      return;
+    }
+    setTimeOffHistoryClearing(true);
+    const { data, error } = await supabase.rpc(
+      "clear_shop_completed_time_off_history",
+      { p_shop_id: shopId },
+    );
+    setTimeOffHistoryClearing(false);
+    if (error) {
+      showNotice(`Could not clear time-off history: ${error.message}`, true);
+      return;
+    }
+    const deletedCount = Number(Array.isArray(data) ? data[0] : data) || 0;
+    await loadWorkforceData();
+    showNotice(`${deletedCount} completed time-off request${deletedCount === 1 ? "" : "s"} deleted.`);
   };
 
   const cancelShopEdit = () => {
@@ -809,7 +920,7 @@ export default function OwnerDashboard() {
     >
       <div className="page-intro">
         <div>
-          <span className="eyebrow">Monday, October 14, 2026</span>
+          <span className="eyebrow">{currentDateLabel}</span>
           <h2>
             {active === "overview"
               ? `Good morning, ${name.split(" ")[0]}.`
@@ -817,6 +928,8 @@ export default function OwnerDashboard() {
                 ? "Set up your shop"
                 : active === "staffManagement"
                   ? "Your team"
+                  : active === "timeOff"
+                    ? "Time-off requests"
                   : active === "aiShiftPlanner"
                     ? "AI shift planner"
                     : active === "schedule"
@@ -830,7 +943,7 @@ export default function OwnerDashboard() {
               ? "Here’s what’s happening with your workforce this week."
               : active === "shopSetup"
                 ? "Keep your shop details and opening hours ready for scheduling."
-              : "Mock workspace data is clearly marked and ready to connect to your backend."}
+              : "Ready to manage your team, generate shifts, and review reports? Use the sections below to get started."}
           </p>
         </div>
         {notice && (
@@ -1243,6 +1356,61 @@ export default function OwnerDashboard() {
           </div>
         </section>
       )}
+      {active === "timeOff" && (
+        <section className="panel workforce-section">
+          <PanelTitle
+            title="Time-off requests"
+            action={
+              <div className="inline-actions">
+                <span>{timeOffRequests.length ? `${timeOffRequests.length} requests` : "No requests"}</span>
+                {timeOffRequests.some((request) =>
+                  ["approved", "rejected"].includes(String(request.status).toLowerCase()),
+                ) && (
+                  <button
+                    className="button button-ghost"
+                    onClick={clearTimeOffHistory}
+                    disabled={timeOffHistoryClearing}
+                  >
+                    {timeOffHistoryClearing ? "Clearing…" : "Clear completed history"}
+                  </button>
+                )}
+              </div>
+            }
+          />
+          {workforceLoading ? (
+            <p className="form-status">Loading time-off requests…</p>
+          ) : timeOffRequests.length ? (
+            timeOffRequests.map((request) => {
+              const status = String(request.status || "pending").toLowerCase();
+              return (
+                <div className="onboarding-row" key={request.id}>
+                  <div>
+                    <strong>{request.staff?.full_name || request.staff?.staff_name || "Staff member"}</strong>
+                    <small>
+                      {shop.name || "Shop"} · {request.start_date} – {request.end_date} · Submitted {new Date(request.created_at).toLocaleDateString()}
+                    </small>
+                    <small>{request.reason || "No reason provided"}</small>
+                  </div>
+                  {status === "pending" ? (
+                    <div className="inline-actions">
+                      <button className="button button-primary" onClick={() => reviewTimeOffRequest(request.id, "approved")} disabled={Boolean(timeOffAction)}>
+                        {timeOffAction === `approved-${request.id}` ? "Approving…" : "Approve"}
+                      </button>
+                      <button className="button button-ghost" onClick={() => reviewTimeOffRequest(request.id, "rejected")} disabled={Boolean(timeOffAction)}>
+                        {timeOffAction === `rejected-${request.id}` ? "Rejecting…" : "Reject"}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={`request-status request-${status}`}>{status}</span>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p className="empty-state">No time-off requests for this shop.</p>
+          )}
+        </section>
+      )}
       {active === "reports" && (
         <section className="panel">
           <PanelTitle
@@ -1376,5 +1544,20 @@ function Shift({ shift, editable, onRemove }) {
         </button>
       )}
     </div>
+  );
+}
+
+function ShopContext({ shops, selectedShopId, onChange }) {
+  if (!shops.length) return null;
+  return (
+    <label className="field shop-context-field">
+      Shop
+      <select value={selectedShopId} onChange={(event) => onChange(event.target.value)}>
+        {shops.map((shop) => {
+          const id = shop.shop_id || shop.id;
+          return <option key={id} value={id}>{shop.shop_name || shop.name || "Shop"}</option>;
+        })}
+      </select>
+    </label>
   );
 }

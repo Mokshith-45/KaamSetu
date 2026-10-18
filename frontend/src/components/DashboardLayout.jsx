@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   FiBarChart2,
   FiCalendar,
+  FiClock,
   FiGrid,
   FiMenu,
   FiSettings,
@@ -18,6 +19,7 @@ const ownerNav = [
   ["overview", "Overview", FiGrid],
   ["shopSetup", "Shop setup", FiSettings],
   ["staffManagement", "Staff management", FiUsers],
+  ["timeOff", "Time-off requests", FiClock],
   ["aiShiftPlanner", "AI shift planner", FiZap],
   ["schedule", "Schedule calendar", FiCalendar],
   ["reports", "Reports & payroll", FiBarChart2],
@@ -28,6 +30,7 @@ const staffNav = [
   ["shopDiscovery", "Find a shop", FiUsers],
   ["myShifts", "My shifts", FiCalendar],
   ["availability", "Availability", FiUsers],
+  ["timeOff", "Time off", FiClock],
   ["notifications", "Notifications", FiBell],
   ["settings", "Settings", FiSettings],
 ];

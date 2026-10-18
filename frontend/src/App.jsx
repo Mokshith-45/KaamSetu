@@ -13,6 +13,7 @@ const ownerRoutes = [
   ["", "overview"],
   ["/shop-setup", "shopSetup"],
   ["/staff-management", "staffManagement"],
+  ["/time-off", "timeOff"],
   ["/ai-shift-planner", "aiShiftPlanner"],
   ["/schedule", "schedule"],
   ["/reports", "reports"],
@@ -23,6 +24,7 @@ const staffRoutes = [
   ["/shop-discovery", "shopDiscovery"],
   ["/my-shifts", "myShifts"],
   ["/availability", "availability"],
+  ["/time-off", "timeOff"],
   ["/notifications", "notifications"],
   ["/settings", "settings"],
 ];
