@@ -15,6 +15,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DashboardLayout from "../components/DashboardLayout";
 import { useCurrentDateLabel } from "../utils/currentDate";
+import {
+  dateKey,
+  dateKeyInTimeZone,
+  formatShiftTime,
+  localDateTimeToIso,
+  startOfWeek,
+} from "../utils/shiftDates";
 import "./StaffDashboard.css";
 
 const demoShifts = [
@@ -122,6 +129,9 @@ export default function StaffDashboard() {
   const [timeOffSaving, setTimeOffSaving] = useState(false);
   const [timeOffAction, setTimeOffAction] = useState("");
   const [timeOffHistoryClearing, setTimeOffHistoryClearing] = useState(false);
+  const [publishedShifts, setPublishedShifts] = useState([]);
+  const [shiftLoading, setShiftLoading] = useState(false);
+  const [shiftWeek, setShiftWeek] = useState(() => startOfWeek(new Date()));
   const [timeOffForm, setTimeOffForm] = useState({
     startDate: "",
     endDate: "",
@@ -135,6 +145,7 @@ export default function StaffDashboard() {
   const [historyClearing, setHistoryClearing] = useState(false);
   const realtimeChannelRef = useRef(null);
   const noticeTimeoutRef = useRef(null);
+  const shiftLoadSequenceRef = useRef(0);
   const location = useLocation();
   const navigate = useNavigate();
   const routeSection =
@@ -216,7 +227,7 @@ export default function StaffDashboard() {
     };
   }, [active, shopSearch]);
   useEffect(() => {
-    if (!["shopDiscovery", "availability", "timeOff"].includes(active)) return;
+    if (!["shopDiscovery", "myShifts", "availability", "timeOff"].includes(active)) return;
     loadStaffData();
   }, [active, loadStaffData]);
   useEffect(() => {
@@ -253,7 +264,10 @@ export default function StaffDashboard() {
         .is("removed_at", null)
         .limit(1);
       membershipQuery = listedMemberId
-        ? membershipQuery.eq("id", listedMemberId)
+        ? membershipQuery
+            .eq("id", listedMemberId)
+            .eq("user_id", userId)
+            .eq("shop_id", selectedShopId)
         : membershipQuery.eq("user_id", userId).eq("shop_id", selectedShopId);
       const { data, error } = await membershipQuery.maybeSingle();
       if (cancelled) return;
@@ -465,10 +479,39 @@ export default function StaffDashboard() {
     }
     setTimeOffRequests(data || []);
   }, [selectedMemberId]);
+  const loadPublishedShifts = useCallback(async () => {
+    const requestSequence = ++shiftLoadSequenceRef.current;
+    if (!selectedMemberId) {
+      setPublishedShifts([]);
+      return;
+    }
+    setShiftLoading(true);
+    const end = new Date(shiftWeek);
+    end.setDate(end.getDate() + 7);
+    const timeZone = selectedShop?.timezone || "UTC";
+    const { data, error } = await supabase
+      .from("shifts")
+      .select("id, shop_id, shop_member_id, start_at, end_at, role_title, notes, status")
+      .eq("shop_member_id", selectedMemberId)
+      .eq("status", "published")
+      .gte("start_at", localDateTimeToIso(dateKey(shiftWeek), "00:00", timeZone))
+      .lt("start_at", localDateTimeToIso(dateKey(end), "00:00", timeZone))
+      .order("start_at");
+    if (requestSequence !== shiftLoadSequenceRef.current) return;
+    setShiftLoading(false);
+    if (error) {
+      setNotice(`Could not load published shifts: ${error.message}`);
+      return;
+    }
+    setPublishedShifts(data || []);
+  }, [selectedMemberId, selectedShop, shiftWeek]);
   useEffect(() => {
     if (active === "availability") loadAvailability();
     if (active === "timeOff") loadTimeOffRequests();
   }, [active, loadAvailability, loadTimeOffRequests]);
+  useEffect(() => {
+    loadPublishedShifts();
+  }, [loadPublishedShifts]);
   useEffect(() => {
     if (!selectedMemberId) return undefined;
     const channel = supabase
@@ -483,11 +526,21 @@ export default function StaffDashboard() {
         },
         () => loadTimeOffRequests(),
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "shifts",
+          filter: `shop_member_id=eq.${selectedMemberId}`,
+        },
+        () => loadPublishedShifts(),
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadTimeOffRequests, selectedMemberId]);
+  }, [loadPublishedShifts, loadTimeOffRequests, selectedMemberId]);
   const updateAvailabilityWindow = (dayIndex, windowIndex, field, value) => {
     setAvailability((current) =>
       current.map((day, index) =>
@@ -928,11 +981,23 @@ export default function StaffDashboard() {
         <section className="panel staff-shifts">
           <div className="panel-title">
             <h3>Weekly schedule</h3>
-            <span className="badge badge-neutral">16 hours planned</span>
+            <div className="inline-actions">
+              <button className="button button-ghost" onClick={() => setShiftWeek(startOfWeek(new Date()))}>Today</button>
+              <button className="button button-ghost" onClick={() => setShiftWeek((week) => new Date(week.getFullYear(), week.getMonth(), week.getDate() - 7))}>Previous</button>
+              <button className="button button-ghost" onClick={() => setShiftWeek((week) => new Date(week.getFullYear(), week.getMonth(), week.getDate() + 7))}>Next</button>
+            </div>
           </div>
-          {demoShifts.map((shift) => (
-            <StaffShift key={shift.date} shift={shift} />
-          ))}
+          {shiftLoading ? <p className="form-status">Loading published shifts…</p> : publishedShifts.length ? (
+            <div className="published-shift-list">
+              {publishedShifts.map((shift) => (
+                <div className="shift-card shift-status-published" key={shift.id}>
+                  <strong>{shift.role_title}</strong>
+                  <span>{dateKeyInTimeZone(shift.start_at, selectedShop?.timezone || "UTC")} · {formatShiftTime(shift.start_at, selectedShop?.timezone || "UTC")} – {formatShiftTime(shift.end_at, selectedShop?.timezone || "UTC")}</span>
+                  {shift.notes && <small>{shift.notes}</small>}
+                </div>
+              ))}
+            </div>
+          ) : <p className="empty-state">No published shifts for this week.</p>}
         </section>
       )}
       {active === "availability" && (

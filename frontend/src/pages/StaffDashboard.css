@@ -243,6 +243,10 @@
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: 18px;
 }
+.published-shift-list {
+  display: grid;
+  gap: 10px;
+}
 .shop-context-field {
   max-width: 360px;
   margin-bottom: 18px;

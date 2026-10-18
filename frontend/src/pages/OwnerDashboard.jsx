@@ -19,6 +19,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DashboardLayout from "../components/DashboardLayout";
 import { useCurrentDateLabel } from "../utils/currentDate";
+import {
+  dateKey,
+  dateKeyInTimeZone,
+  formatShiftTime,
+  addDaysToDateKey,
+  localDateTimeToIso,
+  todayKeyInTimeZone,
+} from "../utils/shiftDates";
 import "./OwnerDashboard.css";
 
 const demoStaff = [
@@ -232,6 +240,21 @@ export default function OwnerDashboard() {
   const [timeOffRequests, setTimeOffRequests] = useState([]);
   const [timeOffAction, setTimeOffAction] = useState("");
   const [timeOffHistoryClearing, setTimeOffHistoryClearing] = useState(false);
+  const [shifts, setShifts] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [shiftSaving, setShiftSaving] = useState(false);
+  const [shiftAction, setShiftAction] = useState("");
+  const [scheduleStaff, setScheduleStaff] = useState([]);
+  const [shiftForm, setShiftForm] = useState({
+    id: "",
+    memberId: "",
+    date: dateKey(new Date()),
+    startTime: "",
+    endTime: "",
+    roleTitle: "",
+    notes: "",
+  });
+  const shiftLoadSequenceRef = useRef(0);
   const noticeTimeoutRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -255,6 +278,10 @@ export default function OwnerDashboard() {
       ),
     );
   }, [timezoneQuery]);
+  const scheduleStartKey = todayKeyInTimeZone(shop.timezone);
+  const scheduleDays = Array.from({ length: 7 }, (_, index) =>
+    addDaysToDateKey(scheduleStartKey, index),
+  );
 
   const clearNotice = () => {
     if (noticeTimeoutRef.current) {
@@ -512,9 +539,10 @@ export default function OwnerDashboard() {
     }
     const { data: members, error: membersError } = await supabase
       .from("shop_members")
-      .select("id, user_id, job_title, created_at, is_active")
+      .select("id, user_id, job_title, created_at, is_active, removed_at")
       .eq("shop_id", shopId)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .is("removed_at", null);
     if (membersError) {
       setTimeOffRequests([]);
       setNotice(`Could not load shop memberships for time-off requests: ${membersError.message}`);
@@ -546,16 +574,39 @@ export default function OwnerDashboard() {
           setNotice(`Could not load staff names: ${profilesError.message}`);
           setNoticeIsError(true);
         }
-        (profiles || []).forEach((profile) =>
-          profilesByUserId.set(profile.id, profile),
-        );
+        (profiles || []).forEach((profile) => {
+          const fullName =
+            typeof profile.full_name === "string"
+              ? profile.full_name.trim()
+              : "";
+          if (profile.id && fullName) {
+            profilesByUserId.set(String(profile.id), fullName);
+          }
+        });
       }
       const staffByMemberId = new Map(
         (members || []).map((member) => [
           member.id,
           {
             ...member,
-            full_name: profilesByUserId.get(member.user_id)?.full_name,
+            full_name:
+              profilesByUserId.get(String(member.user_id)) ||
+              (() => {
+                const staffRecord = (staffResult.data || []).find(
+                  (staffMember) =>
+                    [staffMember.id, staffMember.shop_member_id, staffMember.membership_id, staffMember.user_id]
+                      .filter(Boolean)
+                      .map(String)
+                      .includes(String(member.id)) ||
+                    String(staffMember.user_id || "") === String(member.user_id),
+                );
+                return (
+                  staffRecord?.full_name ||
+                  staffRecord?.staff_name ||
+                  staffRecord?.name ||
+                  ""
+                );
+              })(),
           },
         ]),
       );
@@ -596,6 +647,227 @@ export default function OwnerDashboard() {
       supabase.removeChannel(channel);
     };
   }, [shopId, loadWorkforceData]);
+  const loadShifts = useCallback(async () => {
+    const requestSequence = ++shiftLoadSequenceRef.current;
+    if (!shopId) {
+      setShifts([]);
+      return;
+    }
+    setScheduleLoading(true);
+    const { data: members, error: memberError } = await supabase
+      .from("shop_members")
+      .select("id, user_id, job_title, removed_at")
+      .eq("shop_id", shopId)
+      .eq("is_active", true)
+      .is("removed_at", null);
+    if (memberError) {
+      if (requestSequence !== shiftLoadSequenceRef.current) return;
+      setScheduleLoading(false);
+      showNotice(`Could not load active staff for scheduling: ${memberError.message}`, true);
+      return;
+    }
+    const userIds = (members || []).map((member) => member.user_id).filter(Boolean);
+    const { data: profiles, error: profileError } = userIds.length
+      ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
+      : { data: [], error: null };
+    if (profileError) {
+      showNotice(`Could not load staff names: ${profileError.message}`, true);
+    }
+    const profileMap = new Map(
+      (profiles || [])
+        .map((profile) => [
+          String(profile.id),
+          typeof profile.full_name === "string" ? profile.full_name.trim() : "",
+        ])
+        .filter(([, fullName]) => fullName),
+    );
+    const { data: listedStaff, error: listedStaffError } = await supabase.rpc(
+      "list_shop_staff",
+      { p_shop_id: shopId },
+    );
+    if (listedStaffError) {
+      showNotice(`Could not load approved staff names: ${listedStaffError.message}`, true);
+    }
+    const rpcStaffByMemberId = new Map();
+    [...(staffMembers || []), ...(listedStaff || [])].forEach((member) => {
+      const name = member.full_name || member.staff_name || member.name;
+      if (!name) return;
+      [member.id, member.shop_member_id, member.membership_id, member.user_id]
+        .filter(Boolean)
+        .forEach((id) => rpcStaffByMemberId.set(String(id), name));
+    });
+    if (requestSequence !== shiftLoadSequenceRef.current) return;
+    setScheduleStaff(
+      (members || []).map((member) => ({
+        ...member,
+        full_name:
+        profileMap.get(String(member.user_id)) ||
+        rpcStaffByMemberId.get(String(member.id)) ||
+        rpcStaffByMemberId.get(String(member.user_id)) ||
+        "Unnamed staff member",
+      })),
+    );
+    const startAt = localDateTimeToIso(scheduleStartKey, "00:00", shop.timezone);
+    const endAt = localDateTimeToIso(
+      addDaysToDateKey(scheduleStartKey, 7),
+      "00:00",
+      shop.timezone,
+    );
+    const { data, error } = await supabase
+      .from("shifts")
+      .select("id, shop_id, shop_member_id, start_at, end_at, role_title, notes, status, created_by")
+      .eq("shop_id", shopId)
+      .gte("start_at", startAt)
+      .lt("start_at", endAt)
+      .order("start_at");
+    if (requestSequence !== shiftLoadSequenceRef.current) return;
+    setScheduleLoading(false);
+    if (error) {
+      showNotice(`Could not load schedule: ${error.message}`, true);
+      return;
+    }
+    setShifts(data || []);
+  }, [scheduleStartKey, shop.timezone, shopId, staffMembers]);
+  useEffect(() => {
+    if (active === "schedule") loadShifts();
+  }, [active, loadShifts]);
+  useEffect(() => {
+    if (!shopId) return undefined;
+    const channel = supabase
+      .channel(`owner-shifts-${shopId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "shifts",
+          filter: `shop_id=eq.${shopId}`,
+        },
+        () => loadShifts(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadShifts, shopId]);
+  const saveShift = async (event) => {
+    event.preventDefault();
+    if (!shopId || !shiftForm.memberId || !shiftForm.date || !shiftForm.startTime || !shiftForm.endTime || !shiftForm.roleTitle.trim()) {
+      showNotice("Choose staff, date, start/end times, and a role title.", true);
+      return;
+    }
+    const today = todayKeyInTimeZone(shop.timezone);
+    const existingShift = shiftForm.id
+      ? shifts.find((shift) => shift.id === shiftForm.id)
+      : null;
+    const existingDate = existingShift
+      ? dateKeyInTimeZone(existingShift.start_at, shop.timezone)
+      : null;
+    if (shiftForm.date < today && existingDate !== shiftForm.date) {
+      showNotice("New shifts must be scheduled for today or a future date.", true);
+      return;
+    }
+    if (shiftForm.endTime <= shiftForm.startTime) {
+      showNotice("Shift end time must be after the start time.", true);
+      return;
+    }
+    const member = scheduleStaff.find((item) => item.id === shiftForm.memberId);
+    if (!member) {
+      showNotice("Select an active staff membership from this shop.", true);
+      return;
+    }
+    setShiftSaving(true);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setShiftSaving(false);
+      showNotice("Your session has expired. Please sign in again.", true);
+      return;
+    }
+    const payload = {
+      shop_id: shopId,
+      shop_member_id: shiftForm.memberId,
+      start_at: localDateTimeToIso(shiftForm.date, shiftForm.startTime, shop.timezone),
+      end_at: localDateTimeToIso(shiftForm.date, shiftForm.endTime, shop.timezone),
+      role_title: shiftForm.roleTitle.trim(),
+      notes: shiftForm.notes.trim() || null,
+      created_by: session.user.id,
+    };
+    const query = shiftForm.id
+      ? supabase.from("shifts").update(payload).eq("id", shiftForm.id).eq("shop_id", shopId)
+      : supabase.from("shifts").insert(payload);
+    const { error } = await query;
+    setShiftSaving(false);
+    if (error) {
+      showNotice(`Could not save shift: ${error.message}`, true);
+      return;
+    }
+    setShiftForm((current) => ({ ...current, id: "", notes: "" }));
+    await loadShifts();
+    showNotice(shiftForm.id ? "Shift updated." : "Draft shift created.");
+  };
+  const cancelShift = async (shift) => {
+    if (shift.status === "cancelled" || shift.status === "completed") return;
+    if (!window.confirm("Cancel this shift? The record will be preserved.")) return;
+    setShiftAction(`cancel-${shift.id}`);
+    const { error } = await supabase.from("shifts").update({ status: "cancelled" }).eq("id", shift.id).eq("shop_id", shopId);
+    setShiftAction("");
+    if (error) {
+      showNotice(`Could not cancel shift: ${error.message}`, true);
+      return;
+    }
+    await loadShifts();
+    showNotice("Shift cancelled.");
+  };
+  const publishShift = async (shift) => {
+    setShiftAction(`publish-${shift.id}`);
+    const { error } = await supabase.from("shifts").update({ status: "published" }).eq("id", shift.id).eq("shop_id", shopId).eq("status", "draft");
+    setShiftAction("");
+    if (error) {
+      showNotice(`Could not publish shift: ${error.message}`, true);
+      return;
+    }
+    await loadShifts();
+    showNotice("Shift published.");
+  };
+  const deleteDraftShift = async (shift) => {
+    if (shift.status !== "draft" || !shopId) return;
+    const shiftLabel = shift.role_title
+      ? `"${shift.role_title}" draft`
+      : "this draft shift";
+    if (
+      !window.confirm(
+        `Permanently delete ${shiftLabel}? This action cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setShiftAction(`delete-${shift.id}`);
+    try {
+      const { error } = await supabase.rpc("delete_draft_shift", {
+        p_shift_id: shift.id,
+      });
+      if (error) {
+        showNotice(`Could not delete draft shift: ${error.message}`, true);
+        return;
+      }
+      setShifts((current) => current.filter((item) => item.id !== shift.id));
+      if (shiftForm.id === shift.id) {
+        setShiftForm((current) => ({
+          ...current,
+          id: "",
+          notes: "",
+        }));
+      }
+      await loadShifts();
+      showNotice("Draft shift deleted.");
+    } catch (error) {
+      showNotice(`Could not delete draft shift: ${error.message}`, true);
+    } finally {
+      setShiftAction("");
+    }
+  };
 
   const reviewJoinRequest = async (requestId, decision) => {
     setWorkforceAction(`${decision}-${requestId}`);
@@ -1298,7 +1570,7 @@ export default function OwnerDashboard() {
           )}
         </div>
       )}
-      {(active === "aiShiftPlanner" || active === "schedule") && (
+      {active === "aiShiftPlanner" && (
         <section className="panel">
           <PanelTitle
             title={
@@ -1356,6 +1628,84 @@ export default function OwnerDashboard() {
           </div>
         </section>
       )}
+      {active === "schedule" && (
+        <section className="panel schedule-management-panel">
+          <PanelTitle
+            title="Schedule calendar"
+            action={
+              <div className="inline-actions">
+                <button className="button button-ghost" onClick={() => loadShifts()}>Refresh</button>
+              </div>
+            }
+          />
+          <form className="shift-form" onSubmit={saveShift}>
+            <label className="field">Staff
+              <select value={shiftForm.memberId} onChange={(event) => setShiftForm((form) => ({ ...form, memberId: event.target.value }))} required>
+                <option value="">Select active staff</option>
+                {scheduleStaff.map((member) => {
+                  const id = member.id;
+                  return <option key={id} value={id}>{member.full_name}</option>;
+                })}
+              </select>
+            </label>
+            <label className="field">Date
+              <input type="date" min={todayKeyInTimeZone(shop.timezone)} value={shiftForm.date} onChange={(event) => setShiftForm((form) => ({ ...form, date: event.target.value }))} required />
+            </label>
+            <label className="field">Start
+              <input type="time" value={shiftForm.startTime} onChange={(event) => setShiftForm((form) => ({ ...form, startTime: event.target.value }))} required />
+            </label>
+            <label className="field">End
+              <input type="time" value={shiftForm.endTime} onChange={(event) => setShiftForm((form) => ({ ...form, endTime: event.target.value }))} required />
+            </label>
+            <label className="field">Role title
+              <input value={shiftForm.roleTitle} onChange={(event) => setShiftForm((form) => ({ ...form, roleTitle: event.target.value }))} required />
+            </label>
+            <label className="field">Notes
+              <input value={shiftForm.notes} onChange={(event) => setShiftForm((form) => ({ ...form, notes: event.target.value }))} />
+            </label>
+            <button className="button button-primary" disabled={shiftSaving}>{shiftSaving ? "Saving…" : shiftForm.id ? "Update draft" : "Save draft"}</button>
+          </form>
+          {scheduleLoading ? <p className="form-status">Loading schedule…</p> : !shopId ? <p className="empty-state">Create your shop before managing shifts.</p> : shifts.length ? (
+            <div className="shift-week-grid">
+              {scheduleDays.map((day) => {
+                const key = day;
+                const dayDate = new Date(`${day}T12:00:00`);
+                const dayShifts = shifts.filter(
+                  (shift) =>
+                    dateKeyInTimeZone(shift.start_at, shop.timezone) === key,
+                );
+                return (
+                  <div className="shift-day-column" key={key}>
+                    <strong>{dayDate.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</strong>
+                    {dayShifts.length ? dayShifts.map((shift) => {
+                      const member = scheduleStaff.find((item) => item.id === shift.shop_member_id);
+                      return <div className={`shift-card shift-status-${shift.status}`} key={shift.id}>
+                        <strong>{member?.full_name || member?.staff_name || "Unnamed staff member"}</strong>
+                        <span>{shift.role_title}</span>
+                        <small>{formatShiftTime(shift.start_at, shop.timezone)} – {formatShiftTime(shift.end_at, shop.timezone)} · {shift.status}</small>
+                        <div className="inline-actions">
+                          {shift.status === "draft" && <button className="button button-ghost" onClick={() => setShiftForm({
+                            id: shift.id,
+                            memberId: shift.shop_member_id,
+                            date: dateKeyInTimeZone(shift.start_at, shop.timezone),
+                            startTime: new Intl.DateTimeFormat("en-GB", { timeZone: shop.timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(shift.start_at)),
+                            endTime: new Intl.DateTimeFormat("en-GB", { timeZone: shop.timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(shift.end_at)),
+                            roleTitle: shift.role_title || "",
+                            notes: shift.notes || "",
+                          })}>Edit</button>}
+                          {shift.status === "draft" && <button className="button button-ghost" onClick={() => publishShift(shift)} disabled={Boolean(shiftAction)}>{shiftAction === `publish-${shift.id}` ? "Publishing…" : "Publish"}</button>}
+                          {shift.status === "draft" && <button className="button button-ghost" onClick={() => deleteDraftShift(shift)} disabled={Boolean(shiftAction)}>{shiftAction === `delete-${shift.id}` ? "Deleting…" : "Delete draft"}</button>}
+                          {shift.status !== "cancelled" && shift.status !== "completed" && <button className="button button-ghost" onClick={() => cancelShift(shift)} disabled={Boolean(shiftAction)}>{shiftAction === `cancel-${shift.id}` ? "Cancelling…" : "Cancel"}</button>}
+                        </div>
+                      </div>;
+                    }) : <span className="empty-state">No shifts</span>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p className="empty-state">No shifts scheduled for this week.</p>}
+        </section>
+      )}
       {active === "timeOff" && (
         <section className="panel workforce-section">
           <PanelTitle
@@ -1385,7 +1735,7 @@ export default function OwnerDashboard() {
               return (
                 <div className="onboarding-row" key={request.id}>
                   <div>
-                    <strong>{request.staff?.full_name || request.staff?.staff_name || "Staff member"}</strong>
+                    <strong>{request.staff?.full_name || request.staff?.staff_name || "Unnamed staff member"}</strong>
                     <small>
                       {shop.name || "Shop"} · {request.start_date} – {request.end_date} · Submitted {new Date(request.created_at).toLocaleDateString()}
                     </small>
